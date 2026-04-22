@@ -1,0 +1,326 @@
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  -webkit-app-region: no-drag;
+  padding: 12px 32px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 14, 20, 0.45);
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.composer-queue {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.composer-queue-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.composer-queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.composer-queue-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 11px;
+}
+
+.composer-queue-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.composer-queue-menu {
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+
+.composer-queue-menu:hover {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.composer-input {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.composer textarea {
+  height: 60px;
+  resize: none;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  padding: 8px 4px;
+  font-size: 14px;
+  -webkit-app-region: no-drag;
+}
+
+.composer textarea:focus {
+  outline: none;
+}
+
+.composer-send {
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.composer-send:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.composer-stop {
+  border: 1px solid rgba(255, 107, 107, 0.6);
+  background: rgba(255, 107, 107, 0.12);
+  color: rgba(255, 196, 196, 0.9);
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.composer-stop:hover {
+  background: rgba(255, 107, 107, 0.2);
+  color: #fff;
+}
+
+.composer.is-disabled {
+  opacity: 0.7;
+}
+
+.composer textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.composer-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.composer-stop:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: rgba(255, 107, 107, 0.08);
+  color: rgba(255, 196, 196, 0.4);
+}
+
+.composer-select:disabled {
+  cursor: not-allowed;
+  color: rgba(255, 255, 255, 0.45);
+  background-image: none;
+}
+
+.composer-bar {
+  display: flex;
+  align-items: center;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.composer-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.composer-context {
+  margin-left: auto;
+  display: grid;
+  grid-template-columns: auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.composer-status {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.composer-status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.composer-status-pill.is-override {
+  border-color: rgba(255, 191, 94, 0.28);
+  background: rgba(255, 191, 94, 0.09);
+  color: rgba(255, 221, 164, 0.92);
+}
+
+.composer-reset {
+  padding: 4px 10px;
+  min-height: 24px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 11px;
+}
+
+.composer-context-ring {
+  --context-free: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  position: relative;
+  background:
+    radial-gradient(circle, rgba(10, 14, 20, 0.9) 54%, transparent 56%),
+    conic-gradient(
+      from 180deg,
+      hsl(calc(120deg * var(--context-free) / 100), 80%, 55%)
+        calc(var(--context-free) * 1%),
+      rgba(255, 255, 255, 0.12) 0
+    );
+  transition: background 0.2s ease;
+}
+
+.composer-context-ring::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%) translateY(4px);
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(10, 14, 20, 0.95);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 10px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.composer-context-ring:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.composer-context-value {
+  font-weight: 600;
+  font-size: 6px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+.composer-select-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  width: max-content;
+}
+
+.composer-icon {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.composer-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.composer-select {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  padding: 2px 12px 2px 0;
+  cursor: pointer;
+  width: auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background-image: linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.6) 50%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.6) 50%, transparent 50%);
+  background-position: calc(100% - 6px) calc(50% + 1px),
+    calc(100% - 2px) calc(50% + 1px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.composer-select--model {
+  width: 110px;
+  max-width: 110px;
+}
+
+.composer-select--effort {
+  width: 60px;
+  max-width: 60px;
+}
+
+.composer-select--approval {
+  width: 90px;
+  max-width: 90px;
+}
+
+.composer-select--skill {
+  width: 60px;
+  max-width: 60px;
+}
+
+.composer-select:focus {
+  outline: none;
+  color: #fff;
+}

@@ -1,0 +1,12 @@
+.vscode/
+node_modules/
+dist/
+coverage/
+.vite/
+*.log
+.DS_Store
+src-tauri/target/
+target/
+.env
+.env.local
+.env.*.local

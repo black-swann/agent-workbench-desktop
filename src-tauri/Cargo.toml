@@ -1,0 +1,25 @@
+[package]
+name = "agent-workbench"
+version = "0.1.0"
+description = "Agent Workbench desktop app"
+authors = ["Agent Workbench contributors"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix keeps the library name distinct from the binary name.
+name = "agent_workbench_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["io-util", "process", "rt", "sync"] }
+uuid = { version = "1", features = ["v4"] }
+tauri-plugin-dialog = "2"

@@ -1,0 +1,338 @@
+.main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 230px;
+  grid-template-rows: auto 1fr auto auto;
+  gap: 0;
+  padding: 0;
+  position: relative;
+  -webkit-app-region: no-drag;
+  min-height: 0;
+  min-width: 0;
+}
+
+.app-alerts {
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 28px 0;
+}
+
+.app-alert {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.app-alert.error {
+  border-color: rgba(255, 120, 120, 0.22);
+  background: rgba(120, 28, 28, 0.22);
+}
+
+.app-alert.warning {
+  border-color: rgba(255, 191, 94, 0.22);
+  background: rgba(120, 81, 15, 0.2);
+}
+
+.app-alert.info {
+  border-color: rgba(103, 173, 255, 0.22);
+  background: rgba(24, 63, 112, 0.2);
+}
+
+.app-alert-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.app-alert-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.app-alert-detail {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.74);
+  overflow-wrap: anywhere;
+}
+
+.app-alert-dismiss {
+  padding: 6px 10px;
+  min-height: 30px;
+  flex-shrink: 0;
+}
+
+.main-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  min-width: 0;
+  -webkit-app-region: no-drag;
+  width: 100%;
+}
+
+.workspace-header {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.workspace-header-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.main-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 14px 28px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 14, 20, 0.45);
+  -webkit-app-region: no-drag;
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.main-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  flex: 1;
+}
+
+.main-topbar-left .icon-button {
+  padding: 6px 10px;
+}
+
+.workspace-title-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-title {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.workspace-path {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.56);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: min(58vw, 720px);
+  font-family: "JetBrains Mono", "SFMono-Regular", "Menlo", "Monaco", monospace;
+}
+
+.workspace-connection-badge {
+  font-size: 11px;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.workspace-connection-badge.connected {
+  color: #8ce8b0;
+  background: rgba(33, 84, 53, 0.28);
+}
+
+.workspace-connection-badge.disconnected {
+  color: #ffb3a8;
+  background: rgba(112, 46, 39, 0.26);
+}
+
+.workspace-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-button {
+  min-height: 34px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.workspace-settings-panel {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+  gap: 14px;
+  padding-top: 10px;
+}
+
+.workspace-settings-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  min-width: 0;
+}
+
+.workspace-settings-card-wide {
+  min-width: 0;
+}
+
+.workspace-settings-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.workspace-settings-heading {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.workspace-settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.workspace-settings-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.workspace-settings-help {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.workspace-settings-error {
+  color: #ffb7a8;
+}
+
+.workspace-settings-input,
+.workspace-settings-select {
+  min-height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  padding: 8px 12px;
+}
+
+.workspace-settings-input-row {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+
+.workspace-settings-input-row .workspace-settings-input {
+  flex: 1;
+  min-width: 220px;
+}
+
+.workspace-settings-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.workspace-settings-actions-right {
+  justify-content: flex-end;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1080px) {
+  .workspace-settings-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-path {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 820px) {
+  .app-alerts {
+    padding: 12px 18px 0;
+  }
+
+  .main-topbar {
+    padding: 12px 18px 10px;
+  }
+
+  .content {
+    padding-left: 18px;
+  }
+
+  .workspace-title-line {
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+
+  .workspace-path {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .workspace-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+.content {
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  -webkit-app-region: no-drag;
+  padding: 0 0 0 32px;
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-left: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(9, 12, 20, 0.4);
+  height: 100%;
+  padding-top: 0;
+  padding-bottom: 0;
+  grid-column: 2;
+  grid-row: 1 / 5;
+  min-height: 0;
+  overflow: hidden;
+}

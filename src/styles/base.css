@@ -1,0 +1,53 @@
+:root {
+  font-family: Inter, "Noto Sans", "Liberation Sans", "DejaVu Sans", sans-serif;
+  color: #e6e7ea;
+  background-color: #0b0f14;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: #0b0f14;
+  overflow: hidden;
+}
+
+#root {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app {
+  height: 100vh;
+  display: grid;
+  grid-template-columns: var(--sidebar-width, 280px) 1fr;
+  background:
+    radial-gradient(circle at top left, rgba(62, 84, 120, 0.18), transparent 30%),
+    linear-gradient(180deg, #101722 0%, #0b0f14 100%);
+  border-radius: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+
+@media (max-width: 960px) {
+  .app {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    flex-direction: row;
+    align-items: center;
+    overflow-x: auto;
+  }
+
+  .content {
+    grid-template-columns: 1fr;
+  }
+}
