@@ -1330,16 +1330,17 @@ export function useThreads({
           threads: Array.from(unique.values()),
         });
       } catch (error) {
-        onError?.(
-          "Thread list failed",
-          error instanceof Error ? error.message : String(error),
-        );
+        const message = error instanceof Error ? error.message : String(error);
+        const isStaleDisconnectedList = message.includes("workspace not connected");
+        if (!isStaleDisconnectedList) {
+          onError?.("Thread list failed", message);
+        }
         onDebug?.({
           id: `${Date.now()}-client-thread-list-error`,
           timestamp: Date.now(),
-          source: "error",
+          source: isStaleDisconnectedList ? "client" : "error",
           label: "thread/list error",
-          payload: error instanceof Error ? error.message : String(error),
+          payload: message,
         });
       } finally {
         setIsListingByWorkspace((prev) => ({ ...prev, [workspace.id]: false }));

@@ -167,6 +167,32 @@ fn validate_codex_bin_path(codex_bin: &str) -> Result<String, String> {
     Ok(trimmed.to_string())
 }
 
+fn default_codex_bin() -> String {
+    let candidates = [
+        "/usr/local/bin/codex",
+        "/home/example/.local/bin/codex",
+        "/usr/bin/codex",
+        "/bin/codex",
+    ];
+    candidates
+        .iter()
+        .find(|candidate| {
+            let path = PathBuf::from(candidate);
+            path.is_file() && validate_codex_bin_permissions(&path, candidate).is_ok()
+        })
+        .map(|candidate| (*candidate).to_string())
+        .unwrap_or_else(|| "codex".to_string())
+}
+
+fn desktop_child_path() -> String {
+    let existing = std::env::var("PATH").unwrap_or_default();
+    let common = "/usr/local/bin:/usr/bin:/bin:/home/example/.local/bin";
+    if existing.is_empty() {
+        return common.to_string();
+    }
+    format!("{common}:{existing}")
+}
+
 #[cfg(unix)]
 fn validate_codex_bin_permissions(path: &PathBuf, display: &str) -> Result<(), String> {
     use std::os::unix::fs::PermissionsExt;
@@ -257,14 +283,23 @@ async fn spawn_workspace_session(
     entry: WorkspaceEntry,
     app_handle: AppHandle,
 ) -> Result<Arc<WorkspaceSession>, String> {
-    let mut command = Command::new(entry.codex_bin.clone().unwrap_or_else(|| "codex".into()));
+    let cwd = PathBuf::from(&entry.path);
+    if !cwd.is_dir() {
+        return Err(format!("workspace path is not available: {}", entry.path));
+    }
+
+    let codex_bin = entry.codex_bin.clone().unwrap_or_else(default_codex_bin);
+    let mut command = Command::new(&codex_bin);
     command.arg("app-server");
     command.current_dir(&entry.path);
+    command.env("PATH", desktop_child_path());
     command.stdin(std::process::Stdio::piped());
     command.stdout(std::process::Stdio::piped());
     command.stderr(std::process::Stdio::piped());
 
-    let mut child = command.spawn().map_err(|e| e.to_string())?;
+    let mut child = command
+        .spawn()
+        .map_err(|e| format!("failed to start Codex app-server with `{codex_bin}`: {e}"))?;
     let stdin = child.stdin.take().ok_or("missing stdin")?;
     let stdout = child.stdout.take().ok_or("missing stdout")?;
     let stderr = child.stderr.take().ok_or("missing stderr")?;
@@ -787,7 +822,9 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
-    use super::{build_turn_start_params, validate_codex_bin_path};
+    use super::{
+        build_turn_start_params, default_codex_bin, desktop_child_path, validate_codex_bin_path,
+    };
     use serde_json::json;
     use std::fs;
     #[cfg(unix)]
@@ -838,6 +875,18 @@ mod tests {
                 .expect_err("expected validation error");
         assert!(error.contains("not executable"));
         let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn default_codex_bin_prefers_absolute_executable_when_available() {
+        let resolved = default_codex_bin();
+        assert!(resolved == "codex" || resolved.starts_with('/'));
+    }
+
+    #[test]
+    fn desktop_child_path_includes_usr_local_bin() {
+        let path = desktop_child_path();
+        assert!(path.split(':').any(|entry| entry == "/usr/local/bin"));
     }
 
     #[test]

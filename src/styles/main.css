@@ -1,6 +1,6 @@
 .main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-columns: minmax(0, 1fr) clamp(300px, 18vw, 400px);
   grid-template-rows: auto 1fr auto auto;
   gap: 0;
   padding: 0;
@@ -10,8 +10,17 @@
   min-width: 0;
 }
 
+.main.right-panel-collapsed {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.main.no-active-workspace {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
 .app-alerts {
-  grid-column: 1;
+  grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -166,6 +175,30 @@
   gap: 10px;
 }
 
+.display-scale-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.panel-toggle-button.is-collapsed {
+  color: rgba(180, 220, 255, 0.92);
+  background: rgba(100, 200, 255, 0.1);
+}
+
+.display-scale-value {
+  min-height: 28px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.72);
+  font-variant-numeric: tabular-nums;
+}
+
 .header-button {
   min-height: 34px;
   padding: 6px 12px;
@@ -279,6 +312,7 @@
   display: flex;
   gap: 12px;
   flex-shrink: 0;
+  align-items: center;
 }
 
 .debug-button {
@@ -364,4 +398,71 @@
   grid-row: 1 / 5;
   min-height: 0;
   overflow: hidden;
+}
+
+.main.right-panel-collapsed .right-panel {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .main {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto minmax(142px, 28vh);
+    overflow: hidden;
+  }
+
+  .main-topbar {
+    padding: 10px 18px;
+  }
+
+  .main-header {
+    gap: 10px;
+  }
+
+  .workspace-title {
+    font-size: 15px;
+  }
+
+  .workspace-path {
+    max-width: 100%;
+  }
+
+  .actions {
+    gap: 8px;
+  }
+
+  .display-scale-controls {
+    gap: 2px;
+  }
+
+  .content {
+    padding-left: 18px;
+  }
+
+  .right-panel {
+    grid-column: 1;
+    grid-row: 4;
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    min-height: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .main {
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+
+  .main-topbar {
+    padding: 8px 14px;
+  }
+
+  .workspace-header-actions .header-button {
+    min-height: 30px;
+    padding: 5px 9px;
+  }
+
+  .right-panel {
+    display: none;
+  }
 }

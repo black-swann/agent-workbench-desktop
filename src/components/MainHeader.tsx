@@ -26,6 +26,12 @@ type MainHeaderProps = {
     codexBin: string | null,
   ) => Promise<WorkspaceInfo>;
   onReconnectWorkspace: (workspace: WorkspaceInfo) => Promise<void>;
+  uiScale: number;
+  minUiScale: number;
+  maxUiScale: number;
+  onDecreaseUiScale: () => void;
+  onIncreaseUiScale: () => void;
+  onResetUiScale: () => void;
   onStartReviewPreset: (instructions: string) => Promise<void>;
 };
 
@@ -42,6 +48,12 @@ export function MainHeader({
   onUpdateWorkspaceSettings,
   onUpdateWorkspaceCodexBin,
   onReconnectWorkspace,
+  uiScale,
+  minUiScale,
+  maxUiScale,
+  onDecreaseUiScale,
+  onIncreaseUiScale,
+  onResetUiScale,
   onStartReviewPreset,
 }: MainHeaderProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -275,6 +287,42 @@ export function MainHeader({
             </div>
             <div className="workspace-settings-help">
               Preset review actions use the existing inline review flow with scoped instructions.
+            </div>
+          </div>
+
+          <div className="workspace-settings-card">
+            <div className="workspace-settings-heading">Appearance</div>
+            <div className="workspace-settings-actions">
+              <div className="display-scale-controls" aria-label="Display scale">
+                <button
+                  className="ghost icon-button"
+                  onClick={onDecreaseUiScale}
+                  disabled={uiScale <= minUiScale}
+                  aria-label="Decrease display scale"
+                  title="Decrease display scale"
+                >
+                  -
+                </button>
+                <button
+                  className="ghost display-scale-value"
+                  onClick={onResetUiScale}
+                  title="Reset display scale"
+                >
+                  {Math.round(uiScale * 100)}%
+                </button>
+                <button
+                  className="ghost icon-button"
+                  onClick={onIncreaseUiScale}
+                  disabled={uiScale >= maxUiScale}
+                  aria-label="Increase display scale"
+                  title="Increase display scale"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            <div className="workspace-settings-help">
+              Display scale is saved for this desktop app and applies after the settings panel closes.
             </div>
           </div>
 

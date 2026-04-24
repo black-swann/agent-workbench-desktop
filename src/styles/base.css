@@ -16,6 +16,7 @@ body {
   margin: 0;
   background: #0b0f14;
   overflow: hidden;
+  font-size: calc(16px * var(--fallback-ui-scale, 1));
 }
 
 #root {
@@ -35,19 +36,16 @@ body {
   position: relative;
 }
 
-
 @media (max-width: 960px) {
   .app {
     grid-template-columns: 1fr;
+    grid-template-rows: minmax(156px, 32vh) minmax(0, 1fr);
   }
 
   .sidebar {
-    flex-direction: row;
-    align-items: center;
-    overflow-x: auto;
-  }
-
-  .content {
-    grid-template-columns: 1fr;
+    padding: 16px 18px 12px;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    overflow: hidden;
   }
 }

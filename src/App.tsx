@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect, useRef, useState, type CSSProperties } from "react";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
 import "./styles/base.css";
 import "./styles/buttons.css";
 import "./styles/sidebar.css";
@@ -50,10 +51,16 @@ const THREAD_OVERRIDES_KEY = "agent-workbench:thread-overrides";
 const THREAD_PRESENTATION_KEY = "agent-workbench:thread-presentation";
 const THREAD_CHECKPOINTS_KEY = "agent-workbench:thread-checkpoints";
 const SIDEBAR_WIDTH_KEY = "agent-workbench:sidebar-width";
+const UI_SCALE_KEY = "agent-workbench:ui-scale";
+const RIGHT_PANEL_COLLAPSED_KEY = "agent-workbench:right-panel-collapsed";
 const DEBUG_LOGGING_KEY = "agent-workbench:debug-logging-enabled";
 const MIN_SIDEBAR_WIDTH = 240;
 const MAX_SIDEBAR_WIDTH = 520;
 const DEFAULT_SIDEBAR_WIDTH = 280;
+const MIN_UI_SCALE = 1;
+const MAX_UI_SCALE = 1.5;
+const UI_SCALE_STEP = 0.1;
+const BASE_UI_ZOOM = 1.05;
 
 function readStorageValue<T>(key: string, fallback: T): T {
   try {
@@ -73,6 +80,27 @@ function writeStorageValue<T>(key: string, value: T) {
   } catch {
     // Ignore persistence failures and keep the UI usable.
   }
+}
+
+function clampUiScale(value: number): number {
+  if (Number.isNaN(value)) {
+    return 1;
+  }
+  const rounded = Math.round(value * 10) / 10;
+  return Math.min(Math.max(rounded, MIN_UI_SCALE), MAX_UI_SCALE);
+}
+
+function defaultUiScale() {
+  if (typeof window === "undefined") {
+    return 1;
+  }
+  const pixelRatio = window.devicePixelRatio || 1;
+  const width = window.screen?.width ?? window.innerWidth;
+  const height = window.screen?.height ?? window.innerHeight;
+  if (pixelRatio < 1.4 && (width >= 3000 || height >= 1800)) {
+    return 1.3;
+  }
+  return 1;
 }
 
 const DebugPanel = lazy(async () => {
@@ -109,6 +137,17 @@ function App() {
     }
     return Math.min(Math.max(Math.round(raw), MIN_SIDEBAR_WIDTH), MAX_SIDEBAR_WIDTH);
   });
+  const [uiScale, setUiScale] = useState<number>(() => {
+    const raw = readStorageValue<number | null>(UI_SCALE_KEY, null);
+    if (typeof raw !== "number") {
+      return defaultUiScale();
+    }
+    return clampUiScale(raw);
+  });
+  const [rightPanelCollapsed, setRightPanelCollapsed] = useState<boolean>(() =>
+    readStorageValue<boolean>(RIGHT_PANEL_COLLAPSED_KEY, false),
+  );
+  const effectiveUiScale = clampUiScale(uiScale * BASE_UI_ZOOM);
   const [pendingThreadOverridesByWorkspace, setPendingThreadOverridesByWorkspace] =
     useState<Record<string, Partial<ThreadOverrideSettings>>>({});
   const composerElementRef = useRef<HTMLTextAreaElement | null>(null);
@@ -350,6 +389,20 @@ function App() {
   }, [sidebarWidth]);
 
   useEffect(() => {
+    writeStorageValue(UI_SCALE_KEY, uiScale);
+  }, [uiScale]);
+
+  useEffect(() => {
+    writeStorageValue(RIGHT_PANEL_COLLAPSED_KEY, rightPanelCollapsed);
+  }, [rightPanelCollapsed]);
+
+  useEffect(() => {
+    getCurrentWebview().setZoom(effectiveUiScale).catch(() => {
+      document.documentElement.style.setProperty("--fallback-ui-scale", String(effectiveUiScale));
+    });
+  }, [effectiveUiScale]);
+
+  useEffect(() => {
     writeStorageValue(DEBUG_LOGGING_KEY, debugLoggingEnabled);
     if (!debugLoggingEnabled) {
       clearDebugEntries();
@@ -529,6 +582,10 @@ function App() {
     setSidebarWidth(
       Math.min(Math.max(Math.round(nextWidth), MIN_SIDEBAR_WIDTH), MAX_SIDEBAR_WIDTH),
     );
+  }
+
+  function setClampedUiScale(nextScale: number) {
+    setUiScale(clampUiScale(nextScale));
   }
 
   function updateThreadOverride(
@@ -962,7 +1019,11 @@ function App() {
         onResizeSidebar={setClampedSidebarWidth}
       />
 
-      <section className="main">
+      <section
+        className={`main ${rightPanelCollapsed ? "right-panel-collapsed" : ""} ${
+          activeWorkspace ? "" : "no-active-workspace"
+        }`}
+      >
         {alerts.length > 0 && (
           <div className="app-alerts" aria-live="polite">
             {alerts.map((alert) => (
@@ -1006,6 +1067,12 @@ function App() {
                   onUpdateWorkspaceSettings={updateWorkspaceSettings}
                   onUpdateWorkspaceCodexBin={updateWorkspaceCodexBin}
                   onReconnectWorkspace={handleConnectWorkspace}
+                  uiScale={uiScale}
+                  minUiScale={MIN_UI_SCALE}
+                  maxUiScale={MAX_UI_SCALE}
+                  onDecreaseUiScale={() => setClampedUiScale(uiScale - UI_SCALE_STEP)}
+                  onIncreaseUiScale={() => setClampedUiScale(uiScale + UI_SCALE_STEP)}
+                  onResetUiScale={() => setClampedUiScale(defaultUiScale())}
                   onStartReviewPreset={async (instructions) => {
                     await startReview(`/review ${instructions}`);
                     pushAlert("info", "Review started", instructions);
@@ -1013,6 +1080,43 @@ function App() {
                 />
               </div>
               <div className="actions">
+                <button
+                  className={`ghost icon-button panel-toggle-button ${
+                    rightPanelCollapsed ? "is-collapsed" : ""
+                  }`}
+                  onClick={() => setRightPanelCollapsed((prev) => !prev)}
+                  aria-label={
+                    rightPanelCollapsed ? "Show activity panel" : "Hide activity panel"
+                  }
+                  title={
+                    rightPanelCollapsed ? "Show activity panel" : "Hide activity panel"
+                  }
+                >
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <rect
+                      x="4"
+                      y="5"
+                      width="16"
+                      height="14"
+                      rx="2"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                    />
+                    <path
+                      d="M15 5v14"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d={rightPanelCollapsed ? "M11 9l3 3-3 3" : "M14 9l-3 3 3 3"}
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
                 <button
                   className={`ghost icon-button debug-button ${
                     hasDebugAlerts ? "has-alerts" : ""

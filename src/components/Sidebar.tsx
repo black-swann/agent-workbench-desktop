@@ -233,7 +233,7 @@ export function Sidebar({
                 className="thread-search-input"
                 value={threadSearch}
                 onChange={(event) => setThreadSearch(event.target.value)}
-                placeholder="Search agents across projects"
+                placeholder="Search agents"
                 aria-label="Search threads"
               />
               <select
@@ -393,7 +393,7 @@ export function Sidebar({
                 </div>
                 {showThreads && (
                   <div className="thread-list">
-                    {isListing && (
+                    {isListing && threads.length === 0 && (
                       <div className="thread-placeholder">Loading agents...</div>
                     )}
                     {!isListing && !entry.connected && (
