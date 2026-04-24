@@ -4,8 +4,14 @@
   "description": "Capability for the main window",
   "windows": ["main"],
   "permissions": [
-    "core:default",
-    "opener:default",
-    "dialog:default"
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "core:menu:allow-new",
+    "core:menu:allow-popup",
+    "core:resources:allow-close",
+    "opener:allow-open-path",
+    "opener:allow-reveal-item-in-dir",
+    "dialog:allow-open",
+    "dialog:allow-message"
   ]
 }

@@ -71,6 +71,12 @@ Build the Ubuntu/Debian package:
 npm run build:deb
 ```
 
+Write SHA-256 checksums for the generated Debian artifacts:
+
+```bash
+npm run release:checksums
+```
+
 Verify the Codex app-server handshake independently:
 
 ```bash
@@ -109,9 +115,11 @@ src-tauri/
 - Last active workspace and thread restore on relaunch, and per-thread overrides/checkpoints persist in local storage.
 - The app uses `codex app-server` over stdio; see `src-tauri/src/lib.rs`.
 - Release builds currently produce a `.deb` package only.
+- Release checksum manifests are written next to the `.deb` as `SHA256SUMS`.
 
 ## Project Docs
 
+- Security review: [docs/SECURITY-REVIEW.md](docs/SECURITY-REVIEW.md)
 - Smoke-test checklist: [docs/SMOKE-TEST-CHECKLIST.md](docs/SMOKE-TEST-CHECKLIST.md)
 
 ## Troubleshooting

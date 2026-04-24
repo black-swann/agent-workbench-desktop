@@ -3,11 +3,18 @@ import type { ApprovalRequest } from "../types";
 type ApprovalsProps = {
   approvals: ApprovalRequest[];
   onDecision: (request: ApprovalRequest, decision: "accept" | "decline") => void;
+  emptyMessage?: string;
 };
 
-export function Approvals({ approvals, onDecision }: ApprovalsProps) {
+export function Approvals({
+  approvals,
+  onDecision,
+  emptyMessage = "",
+}: ApprovalsProps) {
   if (!approvals.length) {
-    return null;
+    return emptyMessage ? (
+      <div className="approvals approvals-empty">{emptyMessage}</div>
+    ) : null;
   }
 
   return (
@@ -22,18 +29,32 @@ export function Approvals({ approvals, onDecision }: ApprovalsProps) {
           <div className="approval-summary">
             {formatApprovalSummary(request.params) || "Review the request details below."}
           </div>
+          <div className={`approval-risk ${approvalRisk(request.params)}`}>
+            {approvalRiskLabel(request.params)}
+          </div>
           <div className="approval-details">
             {buildApprovalFields(request.params).map((field) => (
               <div key={field.label} className="approval-field">
-                <div className="approval-field-label">{field.label}</div>
+                <div className="approval-field-header">
+                  <div className="approval-field-label">{field.label}</div>
+                  <button
+                    className="approval-copy"
+                    onClick={() => void navigator.clipboard.writeText(field.value)}
+                    type="button"
+                  >
+                    Copy
+                  </button>
+                </div>
                 <pre className="approval-body">{field.value}</pre>
               </div>
             ))}
           </div>
-          <div className="approval-raw-label">Raw payload</div>
-          <div className="approval-body approval-body-raw">
-            {JSON.stringify(request.params, null, 2)}
-          </div>
+          <details className="approval-raw">
+            <summary>Raw payload</summary>
+            <div className="approval-body approval-body-raw">
+              {JSON.stringify(request.params, null, 2)}
+            </div>
+          </details>
           <div className="approval-actions">
             <button
               className="secondary"
@@ -118,4 +139,30 @@ function stringifyValue(value: unknown): string {
   } catch {
     return String(value);
   }
+}
+
+function approvalRisk(params: Record<string, unknown>) {
+  const command = stringifyValue(params.command ?? params.cmd).toLowerCase();
+  if (
+    /\brm\b|\bsudo\b|\bchmod\b|\bchown\b|\bdd\b|\bmkfs\b|>\s*\/|--force|-rf/.test(
+      command,
+    )
+  ) {
+    return "high";
+  }
+  if (command || params.path || params.cwd || params.file) {
+    return "medium";
+  }
+  return "low";
+}
+
+function approvalRiskLabel(params: Record<string, unknown>) {
+  const risk = approvalRisk(params);
+  if (risk === "high") {
+    return "Review carefully";
+  }
+  if (risk === "medium") {
+    return "Workspace action";
+  }
+  return "Low detail request";
 }

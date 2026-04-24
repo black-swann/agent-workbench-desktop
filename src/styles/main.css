@@ -1,6 +1,6 @@
 .main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 230px;
+  grid-template-columns: minmax(0, 1fr) 280px;
   grid-template-rows: auto 1fr auto auto;
   gap: 0;
   padding: 0;
@@ -232,6 +232,16 @@
   color: #ffb7a8;
 }
 
+.workspace-settings-warning {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 191, 94, 0.28);
+  background: rgba(255, 191, 94, 0.08);
+  color: rgba(255, 221, 164, 0.92);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .workspace-settings-input,
 .workspace-settings-select {
   min-height: 36px;
@@ -269,6 +279,25 @@
   display: flex;
   gap: 12px;
   flex-shrink: 0;
+}
+
+.debug-button {
+  position: relative;
+}
+
+.debug-button.has-alerts::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #ffcf80;
+}
+
+.debug-button.is-paused {
+  color: rgba(255, 221, 164, 0.82);
 }
 
 @media (max-width: 1080px) {

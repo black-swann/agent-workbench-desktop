@@ -1,31 +1,22 @@
 import type { DebugEntry } from "../types";
+import { formatRedactedPayload } from "../utils/redact";
 
 type DebugPanelProps = {
   entries: DebugEntry[];
   isOpen: boolean;
+  loggingEnabled: boolean;
   onClear: () => void;
   onCopy: () => void;
+  onToggleLogging: () => void;
 };
-
-function formatPayload(payload: unknown) {
-  if (payload === undefined) {
-    return "";
-  }
-  if (typeof payload === "string") {
-    return payload;
-  }
-  try {
-    return JSON.stringify(payload, null, 2);
-  } catch {
-    return String(payload);
-  }
-}
 
 export function DebugPanel({
   entries,
   isOpen,
+  loggingEnabled,
   onClear,
   onCopy,
+  onToggleLogging,
 }: DebugPanelProps) {
   if (!isOpen) {
     return null;
@@ -34,8 +25,21 @@ export function DebugPanel({
   return (
     <section className="debug-panel open">
       <div className="debug-header">
-        <div className="debug-title">Debug</div>
+        <div>
+          <div className="debug-title">Debug</div>
+          <div className="debug-subtitle">
+            {loggingEnabled
+              ? "Sensitive values are redacted before display and copy."
+              : "Logging is paused. New diagnostics are not retained."}
+          </div>
+        </div>
         <div className="debug-actions">
+          <button
+            className={`ghost ${loggingEnabled ? "" : "debug-toggle-off"}`}
+            onClick={onToggleLogging}
+          >
+            {loggingEnabled ? "Logging On" : "Logging Off"}
+          </button>
           <button className="ghost" onClick={onCopy}>
             Copy
           </button>
@@ -62,7 +66,7 @@ export function DebugPanel({
               </div>
               {entry.payload !== undefined && (
                 <pre className="debug-payload">
-                  {formatPayload(entry.payload)}
+                  {formatRedactedPayload(entry.payload)}
                 </pre>
               )}
             </div>

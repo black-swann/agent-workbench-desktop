@@ -1,13 +1,15 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 use std::collections::HashMap;
+use std::fs::OpenOptions;
+use std::io::Write;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, ChildStdin, Command};
-use tokio::sync::{Mutex, oneshot};
+use tokio::sync::{oneshot, Mutex};
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -124,13 +126,19 @@ fn read_workspaces(path: &PathBuf) -> Result<HashMap<String, WorkspaceEntry>, St
     }
     let data = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
     let list: Vec<WorkspaceEntry> = serde_json::from_str(&data).map_err(|e| e.to_string())?;
-    Ok(list.into_iter().map(|entry| (entry.id.clone(), entry)).collect())
+    Ok(list
+        .into_iter()
+        .map(|entry| (entry.id.clone(), entry))
+        .collect())
 }
 
 fn canonicalize_workspace_path(path: &str) -> Result<String, String> {
     let candidate = PathBuf::from(path);
     let canonical = std::fs::canonicalize(&candidate)
         .map_err(|e| format!("failed to resolve workspace path `{path}`: {e}"))?;
+    if !canonical.is_dir() {
+        return Err(format!("workspace path is not a directory: {path}"));
+    }
     canonical
         .to_str()
         .map(|value| value.to_string())
@@ -155,7 +163,35 @@ fn validate_codex_bin_path(codex_bin: &str) -> Result<String, String> {
     if !path.is_file() {
         return Err(format!("custom Codex binary path is not a file: {trimmed}"));
     }
+    validate_codex_bin_permissions(&path, trimmed)?;
     Ok(trimmed.to_string())
+}
+
+#[cfg(unix)]
+fn validate_codex_bin_permissions(path: &PathBuf, display: &str) -> Result<(), String> {
+    use std::os::unix::fs::PermissionsExt;
+
+    let mode = path
+        .metadata()
+        .map_err(|e| format!("failed to inspect custom Codex binary permissions `{display}`: {e}"))?
+        .permissions()
+        .mode();
+    if mode & 0o111 == 0 {
+        return Err(format!(
+            "custom Codex binary path is not executable: {display}"
+        ));
+    }
+    if mode & 0o002 != 0 {
+        return Err(format!(
+            "custom Codex binary path is world-writable and will not be used: {display}"
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(not(unix))]
+fn validate_codex_bin_permissions(_path: &PathBuf, _display: &str) -> Result<(), String> {
+    Ok(())
 }
 
 fn build_turn_start_params(
@@ -181,11 +217,7 @@ fn build_turn_start_params(
         }),
     };
 
-    let approval_policy = if access_mode == "full-access" {
-        "never"
-    } else {
-        "on-request"
-    };
+    let approval_policy = "on-request";
 
     json!({
         "threadId": thread_id,
@@ -203,7 +235,22 @@ fn write_workspaces(path: &PathBuf, entries: &[WorkspaceEntry]) -> Result<(), St
         std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
     }
     let data = serde_json::to_string_pretty(entries).map_err(|e| e.to_string())?;
-    std::fs::write(path, data).map_err(|e| e.to_string())
+    let mut options = OpenOptions::new();
+    options.create(true).truncate(true).write(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+    let mut file = options.open(path).map_err(|e| e.to_string())?;
+    file.write_all(data.as_bytes()).map_err(|e| e.to_string())?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        file.set_permissions(std::fs::Permissions::from_mode(0o600))
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 async fn spawn_workspace_session(
@@ -256,8 +303,7 @@ async fn spawn_workspace_session(
 
             let maybe_id = value.get("id").and_then(|id| id.as_u64());
             let has_method = value.get("method").is_some();
-            let has_result_or_error =
-                value.get("result").is_some() || value.get("error").is_some();
+            let has_result_or_error = value.get("result").is_some() || value.get("error").is_some();
             if let Some(id) = maybe_id {
                 if has_result_or_error {
                     if let Some(tx) = session_clone.pending.lock().await.remove(&id) {
@@ -416,10 +462,7 @@ async fn add_workspace(
 }
 
 #[tauri::command]
-async fn remove_workspace(
-    id: String,
-    state: State<'_, AppState>,
-) -> Result<(), String> {
+async fn remove_workspace(id: String, state: State<'_, AppState>) -> Result<(), String> {
     {
         let mut workspaces = state.workspaces.lock().await;
         workspaces.remove(&id);
@@ -511,10 +554,7 @@ async fn update_workspace_codex_bin(
 }
 
 #[tauri::command]
-async fn start_thread(
-    workspace_id: String,
-    state: State<'_, AppState>,
-) -> Result<Value, String> {
+async fn start_thread(workspace_id: String, state: State<'_, AppState>) -> Result<Value, String> {
     let sessions = state.sessions.lock().await;
     let session = sessions
         .get(&workspace_id)
@@ -642,10 +682,7 @@ async fn start_review(
         .await
 }
 #[tauri::command]
-async fn model_list(
-    workspace_id: String,
-    state: State<'_, AppState>,
-) -> Result<Value, String> {
+async fn model_list(workspace_id: String, state: State<'_, AppState>) -> Result<Value, String> {
     let sessions = state.sessions.lock().await;
     let session = sessions
         .get(&workspace_id)
@@ -669,10 +706,7 @@ async fn account_rate_limits(
 }
 
 #[tauri::command]
-async fn skills_list(
-    workspace_id: String,
-    state: State<'_, AppState>,
-) -> Result<Value, String> {
+async fn skills_list(workspace_id: String, state: State<'_, AppState>) -> Result<Value, String> {
     let sessions = state.sessions.lock().await;
     let session = sessions
         .get(&workspace_id)
@@ -705,10 +739,7 @@ async fn connect_workspace(
 ) -> Result<(), String> {
     let entry = {
         let workspaces = state.workspaces.lock().await;
-        workspaces
-            .get(&id)
-            .cloned()
-            .ok_or("workspace not found")?
+        workspaces.get(&id).cloned().ok_or("workspace not found")?
     };
 
     if let Some(existing) = state.sessions.lock().await.remove(&id) {
@@ -759,6 +790,8 @@ mod tests {
     use super::{build_turn_start_params, validate_codex_bin_path};
     use serde_json::json;
     use std::fs;
+    #[cfg(unix)]
+    use std::os::unix::fs::PermissionsExt;
     use std::path::PathBuf;
     use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -780,16 +813,35 @@ mod tests {
     fn validate_codex_bin_path_accepts_existing_absolute_file() {
         let path = unique_temp_path("codex-bin");
         fs::write(&path, "#!/bin/sh\nexit 0\n").expect("failed to create temp file");
-        let validated = validate_codex_bin_path(
-            path.to_str().expect("temp path should be valid utf-8"),
-        )
-        .expect("expected temp file path to validate");
-        assert_eq!(validated, path.to_str().expect("temp path should be valid utf-8"));
+        #[cfg(unix)]
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o700))
+            .expect("failed to make temp file executable");
+        let validated =
+            validate_codex_bin_path(path.to_str().expect("temp path should be valid utf-8"))
+                .expect("expected temp file path to validate");
+        assert_eq!(
+            validated,
+            path.to_str().expect("temp path should be valid utf-8")
+        );
         let _ = fs::remove_file(path);
     }
 
     #[test]
-    fn build_turn_start_params_uses_never_approval_for_full_access() {
+    #[cfg(unix)]
+    fn validate_codex_bin_path_rejects_non_executable_file() {
+        let path = unique_temp_path("codex-bin-not-executable");
+        fs::write(&path, "#!/bin/sh\nexit 0\n").expect("failed to create temp file");
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o600))
+            .expect("failed to set temp permissions");
+        let error =
+            validate_codex_bin_path(path.to_str().expect("temp path should be valid utf-8"))
+                .expect_err("expected validation error");
+        assert!(error.contains("not executable"));
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn build_turn_start_params_keeps_approval_for_full_access() {
         let params = build_turn_start_params(
             "thread-1",
             "hello",
@@ -798,7 +850,7 @@ mod tests {
             Some("high".to_string()),
             Some("full-access".to_string()),
         );
-        assert_eq!(params["approvalPolicy"], json!("never"));
+        assert_eq!(params["approvalPolicy"], json!("on-request"));
         assert_eq!(params["sandboxPolicy"]["type"], json!("dangerFullAccess"));
     }
 

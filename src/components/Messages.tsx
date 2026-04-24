@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { openPath } from "@tauri-apps/plugin-opener";
 import type { ConversationItem } from "../types";
 import { languageFromPath } from "../utils/syntax";
+import { resolveWorkspacePath } from "../utils/workspacePath";
 
 const Markdown = lazy(async () => {
   const module = await import("./Markdown");
@@ -35,21 +36,49 @@ export function Messages({
   const listRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const seenItems = useRef(new Set<string>());
+  const shouldStickToBottom = useRef(true);
   const [openItems, setOpenItems] = useState<Set<string>>(new Set());
   const [showAll, setShowAll] = useState(false);
+  const [showJumpLatest, setShowJumpLatest] = useState(false);
   const maxVisibleItems = 30;
 
   async function handleOpenChangedPath(path: string) {
-    const resolvedPath =
-      path.startsWith("/") || !workspacePath
-        ? path
-        : `${workspacePath.replace(/\/$/, "")}/${path}`;
+    const resolvedPath = resolveWorkspacePath(path, workspacePath);
+    if (!resolvedPath) {
+      return;
+    }
     await openPath(resolvedPath);
   }
 
   function jumpToItem(itemId: string) {
     const target = document.getElementById(`thread-item-${itemId}`);
     target?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function jumpToLatest() {
+    shouldStickToBottom.current = true;
+    setShowJumpLatest(false);
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }
+
+  async function copyItemText(item: ConversationItem) {
+    await navigator.clipboard.writeText(textForItem(item));
+  }
+
+  function textForItem(item: ConversationItem) {
+    if (item.kind === "message") {
+      return item.text;
+    }
+    if (item.kind === "reasoning") {
+      return [item.summary, item.content].filter(Boolean).join("\n\n");
+    }
+    if (item.kind === "review") {
+      return item.text;
+    }
+    if (item.kind === "tool") {
+      return [item.title, item.detail, item.output].filter(Boolean).join("\n\n");
+    }
+    return "";
   }
 
   function checkpointLabelForItem(item: ConversationItem) {
@@ -99,11 +128,13 @@ export function Messages({
     let raf1 = 0;
     let raf2 = 0;
     const target = bottomRef.current;
-    raf1 = window.requestAnimationFrame(() => {
-      raf2 = window.requestAnimationFrame(() => {
-        target.scrollIntoView({ behavior: "smooth", block: "end" });
+    if (shouldStickToBottom.current) {
+      raf1 = window.requestAnimationFrame(() => {
+        raf2 = window.requestAnimationFrame(() => {
+          target.scrollIntoView({ behavior: "smooth", block: "end" });
+        });
       });
-    });
+    }
     return () => {
       if (raf1) {
         window.cancelAnimationFrame(raf1);
@@ -124,6 +155,9 @@ export function Messages({
           return;
         }
         const distanceFromBottom = node.scrollHeight - node.scrollTop - node.clientHeight;
+        const nearBottom = distanceFromBottom <= 96;
+        shouldStickToBottom.current = nearBottom;
+        setShowJumpLatest(!nearBottom);
         if (!showAll && node.scrollTop <= 80) {
           setShowAll(true);
         } else if (showAll && distanceFromBottom <= 80) {
@@ -155,17 +189,25 @@ export function Messages({
         if (item.kind === "message") {
           return (
             <div key={item.id} id={`thread-item-${item.id}`} className={`message ${item.role}`}>
-              <button
-                className={`item-checkpoint ${isCheckpoint ? "active" : ""}`}
+	                <button
+	                  className={`item-checkpoint ${isCheckpoint ? "active" : ""}`}
                 onClick={() =>
                   onToggleCheckpoint?.(item.id, checkpointLabelForItem(item))
                 }
                 type="button"
                 title={isCheckpoint ? "Remove checkpoint" : "Save checkpoint"}
-              >
-                ★
-              </button>
-              <div className="bubble">
+	                >
+	                  ★
+	                </button>
+                <button
+                  className="item-copy"
+                  onClick={() => void copyItemText(item)}
+                  type="button"
+                  title="Copy message"
+                >
+                  Copy
+                </button>
+	                <div className="bubble">
                 <Suspense fallback={<div className="markdown-loading">Loading…</div>}>
                   <Markdown value={item.text} className="markdown" />
                 </Suspense>
@@ -229,6 +271,18 @@ export function Messages({
                 >
                   ★
                 </button>
+                <button
+                  className="item-copy"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    void copyItemText(item);
+                  }}
+                  type="button"
+                  title="Copy item"
+                >
+                  Copy
+                </button>
               </summary>
               <div className="item-body">
                 {item.summary && (
@@ -262,14 +316,22 @@ export function Messages({
                 >
                   ★
                 </button>
-                <span
+	                <span
                   className={`review-badge ${
                     item.state === "started" ? "active" : "done"
                   }`}
                 >
-                  Review
-                </span>
-              </div>
+	                  Review
+	                </span>
+                <button
+                  className="item-copy"
+                  onClick={() => void copyItemText(item)}
+                  type="button"
+                  title="Copy review"
+                >
+                  Copy
+                </button>
+	              </div>
               {item.text && (
                 <Suspense fallback={<div className="markdown-loading">Loading…</div>}>
                   <Markdown value={item.text} className="item-text markdown" />
@@ -323,6 +385,18 @@ export function Messages({
                 title={isCheckpoint ? "Remove checkpoint" : "Save checkpoint"}
               >
                 ★
+              </button>
+              <button
+                className="item-copy"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  void copyItemText(item);
+                }}
+                type="button"
+                title="Copy item"
+              >
+                Copy
               </button>
               {item.status && <span className="item-status">{item.status}</span>}
             </summary>
@@ -394,6 +468,11 @@ export function Messages({
       )}
       {isLoading && items.length > 0 && (
         <div className="messages-status">Refreshing thread history...</div>
+      )}
+      {showJumpLatest && (
+        <button className="jump-latest" onClick={jumpToLatest} type="button">
+          Jump to latest
+        </button>
       )}
       {!items.length && (
         <div className="empty messages-empty">

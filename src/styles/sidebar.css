@@ -54,9 +54,13 @@
 
 .thread-search {
   padding: 0 4px 4px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
 }
 
-.thread-search-input {
+.thread-search-input,
+.thread-filter-select {
   width: 100%;
   min-height: 34px;
   border-radius: 10px;
@@ -64,6 +68,12 @@
   background: rgba(255, 255, 255, 0.04);
   color: #fff;
   padding: 8px 12px;
+}
+
+.thread-filter-select {
+  width: 92px;
+  padding: 8px 24px 8px 10px;
+  font-size: 11px;
 }
 
 .thread-search-input::placeholder {
@@ -143,8 +153,7 @@
   font-size: 14px;
   line-height: 1;
   -webkit-app-region: no-drag;
-  opacity: 0;
-  pointer-events: none;
+  opacity: 0.85;
   transition: opacity 0.15s ease;
 }
 
@@ -199,8 +208,11 @@
 }
 
 .sidebar-header:hover .workspace-add,
+.sidebar-header:focus-within .workspace-add,
 .workspace-row:hover .workspace-add,
-.workspace-row:hover .workspace-action {
+.workspace-row:hover .workspace-action,
+.workspace-row:focus-within .workspace-action,
+.workspace-row.active .workspace-action {
   opacity: 1;
   pointer-events: auto;
 }
@@ -289,6 +301,8 @@
 }
 
 .workspace-row:hover .workspace-toggle,
+.workspace-row:focus-within .workspace-toggle,
+.workspace-row.active .workspace-toggle,
 .workspace-toggle:focus-visible {
   opacity: 1;
   pointer-events: auto;
@@ -366,6 +380,10 @@
 
 .thread-name {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 
@@ -390,7 +408,10 @@
   color: #fff;
 }
 
-.thread-row:hover .thread-menu-trigger {
+.thread-row:hover .thread-menu-trigger,
+.thread-row:focus-within .thread-menu-trigger,
+.thread-row.active .thread-menu-trigger,
+.thread-menu-trigger:focus-visible {
   opacity: 1;
   pointer-events: auto;
 }

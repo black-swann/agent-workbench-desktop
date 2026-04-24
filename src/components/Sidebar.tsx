@@ -65,6 +65,9 @@ export function Sidebar({
     new Set<string>(),
   );
   const [threadSearch, setThreadSearch] = useState("");
+  const [threadFilter, setThreadFilter] = useState<
+    "all" | "running" | "unread" | "approval" | "pinned"
+  >("all");
 
   function startSidebarResize(event: React.MouseEvent) {
     event.preventDefault();
@@ -224,38 +227,79 @@ export function Sidebar({
       </div>
       <div className="sidebar-body">
         <div className="workspace-list">
-          {activeWorkspaceId && (
+          {workspaces.length > 0 && (
             <div className="thread-search">
               <input
                 className="thread-search-input"
                 value={threadSearch}
                 onChange={(event) => setThreadSearch(event.target.value)}
-                placeholder="Search agents in active project"
+                placeholder="Search agents across projects"
                 aria-label="Search threads"
               />
+              <select
+                className="thread-filter-select"
+                value={threadFilter}
+                onChange={(event) =>
+                  setThreadFilter(
+                    event.target.value as
+                      | "all"
+                      | "running"
+                      | "unread"
+                      | "approval"
+                      | "pinned",
+                  )
+                }
+                aria-label="Filter threads"
+              >
+                <option value="all">All</option>
+                <option value="running">Running</option>
+                <option value="unread">Unread</option>
+                <option value="approval">Approvals</option>
+                <option value="pinned">Pinned</option>
+              </select>
             </div>
           )}
           {workspaces.map((entry) => {
             const threads = threadsByWorkspace[entry.id] ?? [];
             const normalizedSearch = threadSearch.trim().toLowerCase();
-            const filteredThreads =
-              entry.id === activeWorkspaceId && normalizedSearch
-                ? threads.filter((thread) =>
-                    thread.name.toLowerCase().includes(normalizedSearch),
-                  )
-                : threads;
+            const approvalCount = approvals.filter(
+              (approval) => approval.workspace_id === entry.id,
+            ).length;
+            const filteredThreads = threads.filter((thread) => {
+              const matchesSearch =
+                !normalizedSearch ||
+                thread.name.toLowerCase().includes(normalizedSearch);
+              const status = threadStatusById[thread.id];
+              const matchesFilter =
+                threadFilter === "all" ||
+                (threadFilter === "running" && status?.isProcessing) ||
+                (threadFilter === "unread" && status?.hasUnread) ||
+                (threadFilter === "approval" && approvalCount > 0) ||
+                (threadFilter === "pinned" && thread.isPinned);
+              return matchesSearch && matchesFilter;
+            });
+            const workspaceMatchesFilter =
+              threadFilter === "all" ||
+              (threadFilter === "approval" && approvalCount > 0) ||
+              filteredThreads.length > 0;
+            const workspaceMatchesSearch =
+              !normalizedSearch ||
+              entry.name.toLowerCase().includes(normalizedSearch) ||
+              filteredThreads.length > 0;
             const isListing = isListingByWorkspace[entry.id] ?? false;
             const isCollapsed = entry.settings.sidebarCollapsed;
-            const showThreads = !isCollapsed;
+            const hasGlobalSearch = Boolean(normalizedSearch) || threadFilter !== "all";
+            const showThreads = !isCollapsed || hasGlobalSearch;
             const processingCount = threads.filter(
               (thread) => threadStatusById[thread.id]?.isProcessing,
             ).length;
             const unreadCount = threads.filter(
               (thread) => threadStatusById[thread.id]?.hasUnread,
             ).length;
-            const approvalCount = approvals.filter(
-              (approval) => approval.workspace_id === entry.id,
-            ).length;
+
+            if (!workspaceMatchesSearch || !workspaceMatchesFilter) {
+              return null;
+            }
 
             return (
               <div key={entry.id} className="workspace-card">
@@ -362,7 +406,7 @@ export function Sidebar({
                       entry.connected &&
                       threads.length > 0 &&
                       filteredThreads.length === 0 && (
-                        <div className="thread-placeholder">No agents match that search.</div>
+                        <div className="thread-placeholder">No agents match the filters.</div>
                       )}
                     {(expandedWorkspaces.has(entry.id)
                       ? filteredThreads

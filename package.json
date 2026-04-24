@@ -9,6 +9,7 @@
     "build": "tsc && vite build",
     "test": "vitest run",
     "build:deb": "tauri build",
+    "release:checksums": "node scripts/release-checksums.mjs",
     "preview": "vite preview",
     "tauri": "tauri",
     "smoke:app-server": "node scripts/codex-app-server-smoke.mjs"

@@ -325,9 +325,16 @@ export function MainHeader({
               >
                 <option value="read-only">Read only</option>
                 <option value="current">Current workspace</option>
-                <option value="full-access">Full access</option>
+                <option value="full-access">Full access, ask</option>
               </select>
             </label>
+            {accessMode === "full-access" && (
+              <div className="workspace-settings-warning">
+                Full access gives agents filesystem access beyond this workspace.
+                Approval prompts remain enabled, but this default should only be used
+                for trusted repos.
+              </div>
+            )}
             <div className="workspace-settings-help">
               These defaults load whenever this workspace becomes active. The composer
               can still be changed per thread without rewriting saved workspace defaults.

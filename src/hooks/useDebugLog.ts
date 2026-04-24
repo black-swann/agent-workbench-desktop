@@ -1,9 +1,10 @@
 import { useCallback, useState } from "react";
 import type { DebugEntry } from "../types";
+import { formatRedactedPayload, redactSensitive } from "../utils/redact";
 
 const MAX_DEBUG_ENTRIES = 200;
 
-export function useDebugLog() {
+export function useDebugLog({ enabled = true }: { enabled?: boolean } = {}) {
   const [debugOpen, setDebugOpen] = useState(false);
   const [debugEntries, setDebugEntries] = useState<DebugEntry[]>([]);
   const [hasDebugAlerts, setHasDebugAlerts] = useState(false);
@@ -25,25 +26,26 @@ export function useDebugLog() {
 
   const addDebugEntry = useCallback(
     (entry: DebugEntry) => {
+      if (!enabled) {
+        return;
+      }
       if (!shouldLogEntry(entry)) {
         return;
       }
       setHasDebugAlerts(true);
-      setDebugEntries((prev) => [...prev, entry].slice(-MAX_DEBUG_ENTRIES));
+      setDebugEntries((prev) => [
+        ...prev,
+        { ...entry, payload: redactSensitive(entry.payload) },
+      ].slice(-MAX_DEBUG_ENTRIES));
     },
-    [shouldLogEntry],
+    [enabled, shouldLogEntry],
   );
 
   const handleCopyDebug = useCallback(async () => {
     const text = debugEntries
       .map((entry) => {
         const timestamp = new Date(entry.timestamp).toLocaleTimeString();
-        const payload =
-          entry.payload !== undefined
-            ? typeof entry.payload === "string"
-              ? entry.payload
-              : JSON.stringify(entry.payload, null, 2)
-            : "";
+        const payload = formatRedactedPayload(entry.payload);
         return [entry.source.toUpperCase(), timestamp, entry.label, payload]
           .filter(Boolean)
           .join("\n");

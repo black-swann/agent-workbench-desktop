@@ -68,11 +68,12 @@
   display: grid;
   grid-template-columns: 1fr auto auto;
   gap: 12px;
-  align-items: center;
+  align-items: end;
 }
 
 .composer textarea {
-  height: 60px;
+  min-height: 48px;
+  max-height: 180px;
   resize: none;
   border-radius: 0;
   border: none;
@@ -80,7 +81,9 @@
   color: inherit;
   padding: 8px 4px;
   font-size: 14px;
+  line-height: 1.45;
   -webkit-app-region: no-drag;
+  overflow-y: auto;
 }
 
 .composer textarea:focus {
@@ -160,6 +163,7 @@
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .composer-context {
@@ -177,6 +181,20 @@
   gap: 6px;
   flex-wrap: wrap;
   align-items: center;
+}
+
+.composer-security-warning {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  max-width: min(100%, 520px);
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 191, 94, 0.32);
+  background: rgba(255, 191, 94, 0.1);
+  color: rgba(255, 221, 164, 0.96);
+  font-size: 11px;
+  line-height: 1.35;
 }
 
 .composer-status-pill {
@@ -264,7 +282,8 @@
   padding: 2px 6px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.04);
-  width: max-content;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .composer-icon {
@@ -301,23 +320,23 @@
 }
 
 .composer-select--model {
-  width: 110px;
-  max-width: 110px;
+  width: clamp(130px, 18vw, 230px);
+  max-width: 230px;
 }
 
 .composer-select--effort {
-  width: 60px;
-  max-width: 60px;
+  width: 88px;
+  max-width: 110px;
 }
 
 .composer-select--approval {
-  width: 90px;
-  max-width: 90px;
+  width: 126px;
+  max-width: 150px;
 }
 
 .composer-select--skill {
-  width: 60px;
-  max-width: 60px;
+  width: 112px;
+  max-width: 180px;
 }
 
 .composer-select:focus {

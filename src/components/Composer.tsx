@@ -62,6 +62,15 @@ export function Composer({
   const [text, setText] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
+  const resizeTextarea = useCallback(() => {
+    const element = textareaRef.current;
+    if (!element) {
+      return;
+    }
+    element.style.height = "auto";
+    element.style.height = `${Math.min(element.scrollHeight, 180)}px`;
+  }, []);
+
   const contextFreePercent = useMemo(() => {
     const contextWindow = contextUsage?.modelContextWindow ?? null;
     if (!contextWindow || contextWindow <= 0) {
@@ -142,6 +151,10 @@ export function Composer({
     };
   }, [onComposerRef]);
 
+  useEffect(() => {
+    resizeTextarea();
+  }, [resizeTextarea, text]);
+
   return (
     <footer className={`composer${disabled ? " is-disabled" : ""}`}>
       {queuedMessages.length > 0 && (
@@ -173,6 +186,7 @@ export function Composer({
           }
           value={text}
           onChange={(event) => setText(event.target.value)}
+          onInput={resizeTextarea}
           disabled={disabled}
           onKeyDown={(event) => {
             if (disabled) {
@@ -233,6 +247,7 @@ export function Composer({
             <select
               className="composer-select composer-select--model"
               aria-label="Model"
+              title={selectionStatus?.model.currentLabel ?? "Model"}
               value={selectedModelId ?? ""}
               onChange={(event) => onSelectModel(event.target.value)}
               disabled={disabled}
@@ -277,6 +292,7 @@ export function Composer({
             <select
               className="composer-select composer-select--effort"
               aria-label="Thinking mode"
+              title={selectionStatus?.effort.currentLabel ?? "Thinking mode"}
               value={selectedEffort ?? ""}
               onChange={(event) => onSelectEffort(event.target.value || null)}
               disabled={disabled}
@@ -310,6 +326,7 @@ export function Composer({
             <select
               className="composer-select composer-select--approval"
               aria-label="Agent access"
+              title={selectionStatus?.access.currentLabel ?? "Agent access"}
               disabled={disabled}
               value={accessMode}
               onChange={(event) =>
@@ -320,7 +337,7 @@ export function Composer({
             >
               <option value="read-only">Read only</option>
               <option value="current">Current</option>
-              <option value="full-access">Full access</option>
+              <option value="full-access">Full access, ask</option>
             </select>
           </div>
           <div className="composer-select-wrap">
@@ -338,6 +355,7 @@ export function Composer({
             <select
               className="composer-select composer-select--skill"
               aria-label="Skills"
+              title="Insert skill"
               onChange={(event) => {
                 const value = event.target.value;
                 if (value) {
@@ -356,6 +374,12 @@ export function Composer({
             </select>
           </div>
         </div>
+        {accessMode === "full-access" && (
+          <div className="composer-security-warning" role="status">
+            Full access can read and write outside this workspace. Approval prompts
+            stay enabled before privileged actions run.
+          </div>
+        )}
         {selectionStatus && (
           <div className="composer-status" aria-live="polite">
             <span

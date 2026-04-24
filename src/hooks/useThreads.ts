@@ -56,6 +56,17 @@ type ThreadAction =
   | { type: "upsertItem"; threadId: string; item: ConversationItem }
   | { type: "setThreadItems"; threadId: string; items: ConversationItem[] }
   | {
+      type: "restoreArchivedThread";
+      workspaceId: string;
+      threads: ThreadSummary[];
+      threadId: string;
+      activeThreadId: string | null;
+      items?: ConversationItem[];
+      status?: { isProcessing: boolean; hasUnread: boolean; isReviewing: boolean };
+      activeTurnId?: string | null;
+      tokenUsage?: ThreadTokenUsage;
+    }
+  | {
       type: "appendReasoningSummary";
       threadId: string;
       itemId: string;
@@ -356,6 +367,44 @@ function threadReducer(state: ThreadState, action: ThreadAction): ThreadState {
           [action.threadId]: action.items,
         },
       };
+    case "restoreArchivedThread": {
+      return {
+        ...state,
+        threadsByWorkspace: {
+          ...state.threadsByWorkspace,
+          [action.workspaceId]: action.threads,
+        },
+        activeThreadIdByWorkspace: {
+          ...state.activeThreadIdByWorkspace,
+          [action.workspaceId]: action.activeThreadId,
+        },
+        itemsByThread: action.items
+          ? {
+              ...state.itemsByThread,
+              [action.threadId]: action.items,
+            }
+          : state.itemsByThread,
+        threadStatusById: action.status
+          ? {
+              ...state.threadStatusById,
+              [action.threadId]: action.status,
+            }
+          : state.threadStatusById,
+        activeTurnIdByThread:
+          action.activeTurnId !== undefined
+            ? {
+                ...state.activeTurnIdByThread,
+                [action.threadId]: action.activeTurnId,
+              }
+            : state.activeTurnIdByThread,
+        tokenUsageByThread: action.tokenUsage
+          ? {
+              ...state.tokenUsageByThread,
+              [action.threadId]: action.tokenUsage,
+            }
+          : state.tokenUsageByThread,
+      };
+    }
     case "appendReasoningSummary": {
       const list = state.itemsByThread[action.threadId] ?? [];
       const index = list.findIndex((entry) => entry.id === action.itemId);
@@ -1539,26 +1588,59 @@ export function useThreads({
     [activeWorkspaceId, resumeThreadForWorkspace],
   );
 
-  const removeThread = useCallback((workspaceId: string, threadId: string) => {
-    dispatch({ type: "removeThread", workspaceId, threadId });
-    (async () => {
-      try {
-        await archiveThreadService(workspaceId, threadId);
-      } catch (error) {
-        onError?.(
-          "Archive failed",
-          error instanceof Error ? error.message : String(error),
-        );
-        onDebug?.({
-          id: `${Date.now()}-client-thread-archive-error`,
-          timestamp: Date.now(),
-          source: "error",
-          label: "thread/archive error",
-          payload: error instanceof Error ? error.message : String(error),
-        });
-      }
-    })();
-  }, [onDebug, onError]);
+  const removeThread = useCallback(
+    (workspaceId: string, threadId: string) => {
+      const previousThreads = state.threadsByWorkspace[workspaceId] ?? [];
+      const previousThread = previousThreads.find((thread) => thread.id === threadId) ?? null;
+      const previousActiveThreadId = state.activeThreadIdByWorkspace[workspaceId] ?? null;
+      const previousItems = state.itemsByThread[threadId];
+      const previousStatus = state.threadStatusById[threadId];
+      const previousTurnId = state.activeTurnIdByThread[threadId];
+      const previousTokenUsage = state.tokenUsageByThread[threadId];
+
+      dispatch({ type: "removeThread", workspaceId, threadId });
+      (async () => {
+        try {
+          await archiveThreadService(workspaceId, threadId);
+        } catch (error) {
+          if (previousThread) {
+            dispatch({
+              type: "restoreArchivedThread",
+              workspaceId,
+              threads: previousThreads,
+              threadId,
+              activeThreadId: previousActiveThreadId,
+              items: previousItems,
+              status: previousStatus,
+              activeTurnId: previousTurnId,
+              tokenUsage: previousTokenUsage,
+            });
+          }
+          onError?.(
+            "Archive failed",
+            error instanceof Error ? error.message : String(error),
+          );
+          onDebug?.({
+            id: `${Date.now()}-client-thread-archive-error`,
+            timestamp: Date.now(),
+            source: "error",
+            label: "thread/archive error",
+            payload: error instanceof Error ? error.message : String(error),
+          });
+        }
+      })();
+    },
+    [
+      onDebug,
+      onError,
+      state.activeThreadIdByWorkspace,
+      state.activeTurnIdByThread,
+      state.itemsByThread,
+      state.threadStatusById,
+      state.threadsByWorkspace,
+      state.tokenUsageByThread,
+    ],
+  );
 
   useEffect(() => {
     if (activeWorkspace?.connected) {

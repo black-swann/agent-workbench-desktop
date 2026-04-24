@@ -130,4 +130,52 @@ describe("useThreads", () => {
       "The workspace session ended. Reconnect to continue.",
     );
   });
+
+  it("restores a thread when archive fails", async () => {
+    listThreadsMock.mockResolvedValue({
+      result: {
+        data: [
+          {
+            id: "thread-archive",
+            cwd: "/tmp/workbench",
+            preview: "Important work",
+            createdAt: 10,
+          },
+        ],
+      },
+    });
+    archiveThreadMock.mockRejectedValue(new Error("archive unavailable"));
+
+    const onError = vi.fn();
+    const { result } = renderHook(() =>
+      useThreads({
+        activeWorkspace: workspace,
+        onWorkspaceConnected: vi.fn(),
+        onWorkspaceDisconnected: vi.fn(),
+        onError,
+        onDebug: vi.fn(),
+      }),
+    );
+
+    await act(async () => {
+      await result.current.listThreadsForWorkspace(workspace);
+    });
+
+    expect(result.current.threadsByWorkspace["workspace-1"]).toEqual([
+      { id: "thread-archive", name: "Important work" },
+    ]);
+
+    act(() => {
+      result.current.removeThread("workspace-1", "thread-archive");
+    });
+
+    expect(result.current.threadsByWorkspace["workspace-1"]).toEqual([]);
+
+    await waitFor(() => {
+      expect(result.current.threadsByWorkspace["workspace-1"]).toEqual([
+        { id: "thread-archive", name: "Important work" },
+      ]);
+    });
+    expect(onError).toHaveBeenCalledWith("Archive failed", "archive unavailable");
+  });
 });

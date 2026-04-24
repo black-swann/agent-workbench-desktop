@@ -8,12 +8,13 @@ import "./styles/messages.css";
 import "./styles/approvals.css";
 import "./styles/composer.css";
 import "./styles/diff-viewer.css";
+import "./styles/activity-panel.css";
 import "./styles/debug.css";
 import { Sidebar } from "./components/Sidebar";
 import { Home } from "./components/Home";
 import { MainHeader } from "./components/MainHeader";
 import { Messages } from "./components/Messages";
-import { Approvals } from "./components/Approvals";
+import { ActivityPanel } from "./components/ActivityPanel";
 import { Composer } from "./components/Composer";
 import { useWorkspaces } from "./hooks/useWorkspaces";
 import { useThreads } from "./hooks/useThreads";
@@ -49,6 +50,7 @@ const THREAD_OVERRIDES_KEY = "agent-workbench:thread-overrides";
 const THREAD_PRESENTATION_KEY = "agent-workbench:thread-presentation";
 const THREAD_CHECKPOINTS_KEY = "agent-workbench:thread-checkpoints";
 const SIDEBAR_WIDTH_KEY = "agent-workbench:sidebar-width";
+const DEBUG_LOGGING_KEY = "agent-workbench:debug-logging-enabled";
 const MIN_SIDEBAR_WIDTH = 240;
 const MAX_SIDEBAR_WIDTH = 520;
 const DEFAULT_SIDEBAR_WIDTH = 280;
@@ -97,6 +99,9 @@ function App() {
   const [threadCheckpointsById, setThreadCheckpointsById] = useState<
     Record<string, ThreadCheckpoint[]>
   >(() => readStorageValue<Record<string, ThreadCheckpoint[]>>(THREAD_CHECKPOINTS_KEY, {}));
+  const [debugLoggingEnabled, setDebugLoggingEnabled] = useState<boolean>(() =>
+    readStorageValue<boolean>(DEBUG_LOGGING_KEY, true),
+  );
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
     const raw = readStorageValue<number>(SIDEBAR_WIDTH_KEY, DEFAULT_SIDEBAR_WIDTH);
     if (typeof raw !== "number" || Number.isNaN(raw)) {
@@ -129,7 +134,7 @@ function App() {
     addDebugEntry,
     handleCopyDebug,
     clearDebugEntries,
-  } = useDebugLog();
+  } = useDebugLog({ enabled: debugLoggingEnabled });
 
   const {
     workspaces,
@@ -343,6 +348,13 @@ function App() {
   useEffect(() => {
     writeStorageValue(SIDEBAR_WIDTH_KEY, sidebarWidth);
   }, [sidebarWidth]);
+
+  useEffect(() => {
+    writeStorageValue(DEBUG_LOGGING_KEY, debugLoggingEnabled);
+    if (!debugLoggingEnabled) {
+      clearDebugEntries();
+    }
+  }, [clearDebugEntries, debugLoggingEnabled]);
 
   useEffect(() => {
     if (!activeWorkspaceId) {
@@ -758,6 +770,13 @@ function App() {
   }
 
   function handleSelectAccessMode(mode: AccessMode) {
+    if (mode === "full-access" && accessMode !== "full-access") {
+      pushAlert(
+        "warning",
+        "Full access selected",
+        "Agents can read and write outside this workspace. Approval prompts remain enabled before privileged actions run.",
+      );
+    }
     setAccessMode(mode);
     if (activeThreadId) {
       updateThreadOverride(activeThreadId, {
@@ -770,6 +789,10 @@ function App() {
     if (activeWorkspaceId) {
       queuePendingThreadOverride(activeWorkspaceId, { accessMode: mode });
     }
+  }
+
+  function toggleDebugLogging() {
+    setDebugLoggingEnabled((prev) => !prev);
   }
 
   useEffect(() => {
@@ -990,39 +1013,44 @@ function App() {
                 />
               </div>
               <div className="actions">
-                {hasDebugAlerts && (
-                  <button
-                    className="ghost icon-button"
-                    onClick={() => setDebugOpen((prev) => !prev)}
-                    aria-label="Debug"
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" aria-hidden>
-                      <path
-                        d="M9 7.5V6.5a3 3 0 0 1 6 0v1"
-                        stroke="currentColor"
-                        strokeWidth="1.4"
-                        strokeLinecap="round"
-                      />
-                      <rect
-                        x="7"
-                        y="7.5"
-                        width="10"
-                        height="9"
-                        rx="3"
-                        stroke="currentColor"
-                        strokeWidth="1.4"
-                      />
-                      <path
-                        d="M4 12h3m10 0h3M6 8l2 2m8-2-2 2M6 16l2-2m8 2-2-2"
-                        stroke="currentColor"
-                        strokeWidth="1.4"
-                        strokeLinecap="round"
-                      />
-                      <circle cx="10" cy="12" r="0.8" fill="currentColor" />
-                      <circle cx="14" cy="12" r="0.8" fill="currentColor" />
-                    </svg>
-                  </button>
-                )}
+                <button
+                  className={`ghost icon-button debug-button ${
+                    hasDebugAlerts ? "has-alerts" : ""
+                  } ${debugLoggingEnabled ? "" : "is-paused"}`}
+                  onClick={() => setDebugOpen((prev) => !prev)}
+                  aria-label={debugLoggingEnabled ? "Debug" : "Debug logging paused"}
+                  title={
+                    debugLoggingEnabled
+                      ? "Open debug diagnostics"
+                      : "Debug logging is paused"
+                  }
+                >
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <path
+                      d="M9 7.5V6.5a3 3 0 0 1 6 0v1"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                    />
+                    <rect
+                      x="7"
+                      y="7.5"
+                      width="10"
+                      height="9"
+                      rx="3"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                    />
+                    <path
+                      d="M4 12h3m10 0h3M6 8l2 2m8-2-2 2M6 16l2-2m8 2-2-2"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                    />
+                    <circle cx="10" cy="12" r="0.8" fill="currentColor" />
+                    <circle cx="14" cy="12" r="0.8" fill="currentColor" />
+                  </svg>
+                </button>
               </div>
             </div>
 
@@ -1056,7 +1084,18 @@ function App() {
             </div>
 
             <div className="right-panel">
-              <Approvals approvals={approvals} onDecision={handleApprovalDecision} />
+              <ActivityPanel
+                workspaces={workspaces}
+                activeWorkspaceId={activeWorkspaceId}
+                activeThreadId={activeThreadId}
+                threadsByWorkspace={visibleThreadsByWorkspace}
+                threadStatusById={threadStatusById}
+                approvals={approvals}
+                rateLimits={activeRateLimits}
+                activeItems={activeItems}
+                debugEntries={debugEntries}
+                onApprovalDecision={handleApprovalDecision}
+              />
             </div>
 
             <Composer
@@ -1143,8 +1182,10 @@ function App() {
               <DebugPanel
                 entries={debugEntries}
                 isOpen={debugOpen}
+                loggingEnabled={debugLoggingEnabled}
                 onClear={clearDebugEntries}
                 onCopy={handleCopyDebug}
+                onToggleLogging={toggleDebugLogging}
               />
             </Suspense>
           </>
