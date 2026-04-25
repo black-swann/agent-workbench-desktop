@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type {
   AccessMode,
   ModelOption,
+  SpeedMode,
   WorkspaceInfo,
   WorkspaceSettings,
 } from "../types";
@@ -14,9 +15,11 @@ type MainHeaderProps = {
   selectedModelId: string | null;
   selectedEffort: string | null;
   accessMode: AccessMode;
+  speedMode: SpeedMode;
   onSelectModel: (modelId: string) => void;
   onSelectEffort: (effort: string | null) => void;
   onSelectAccessMode: (mode: AccessMode) => void;
+  onSelectSpeedMode: (mode: SpeedMode) => void;
   onUpdateWorkspaceSettings: (
     workspaceId: string,
     settings: WorkspaceSettings,
@@ -42,9 +45,11 @@ export function MainHeader({
   selectedModelId,
   selectedEffort,
   accessMode,
+  speedMode,
   onSelectModel,
   onSelectEffort,
   onSelectAccessMode,
+  onSelectSpeedMode,
   onUpdateWorkspaceSettings,
   onUpdateWorkspaceCodexBin,
   onReconnectWorkspace,
@@ -106,6 +111,14 @@ export function MainHeader({
       defaultAccessMode: mode,
     });
     onSelectAccessMode(updated.settings.defaultAccessMode);
+  }
+
+  async function handleDefaultSpeedModeChange(mode: SpeedMode) {
+    const updated = await onUpdateWorkspaceSettings(workspace.id, {
+      ...workspace.settings,
+      defaultSpeedMode: mode,
+    });
+    onSelectSpeedMode(updated.settings.defaultSpeedMode);
   }
 
   async function handleDefaultModelChange(modelId: string) {
@@ -374,6 +387,20 @@ export function MainHeader({
                 <option value="read-only">Read only</option>
                 <option value="current">Current workspace</option>
                 <option value="full-access">Full access, ask</option>
+                <option value="yolo">YOLO, no prompts</option>
+              </select>
+            </label>
+            <label className="workspace-settings-field">
+              <span className="workspace-settings-label">Default speed</span>
+              <select
+                className="workspace-settings-select"
+                value={speedMode}
+                onChange={(event) =>
+                  void handleDefaultSpeedModeChange(event.target.value as SpeedMode)
+                }
+              >
+                <option value="standard">Standard</option>
+                <option value="fast">Fast mode</option>
               </select>
             </label>
             {accessMode === "full-access" && (
@@ -381,6 +408,18 @@ export function MainHeader({
                 Full access gives agents filesystem access beyond this workspace.
                 Approval prompts remain enabled, but this default should only be used
                 for trusted repos.
+              </div>
+            )}
+            {accessMode === "yolo" && (
+              <div className="workspace-settings-warning">
+                YOLO disables approval prompts and removes workspace filesystem
+                limits. Use it only for trusted repos and disposable environments.
+              </div>
+            )}
+            {speedMode === "fast" && (
+              <div className="workspace-settings-help">
+                Fast mode is a speed and credit setting. It does not change filesystem
+                access or approval behavior.
               </div>
             )}
             <div className="workspace-settings-help">

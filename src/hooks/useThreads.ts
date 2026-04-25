@@ -7,6 +7,8 @@ import type {
   ThreadSummary,
   ThreadTokenUsage,
   WorkspaceInfo,
+  AccessMode,
+  SpeedMode,
 } from "../types";
 import {
   respondToServerRequest,
@@ -520,7 +522,8 @@ type UseThreadsOptions = {
   onError?: (title: string, detail: string) => void;
   model?: string | null;
   effort?: string | null;
-  accessMode?: "read-only" | "current" | "full-access";
+  accessMode?: AccessMode;
+  speedMode?: SpeedMode;
 };
 
 function asString(value: unknown) {
@@ -904,6 +907,7 @@ export function useThreads({
   model,
   effort,
   accessMode,
+  speedMode,
 }: UseThreadsOptions) {
   const [state, dispatch] = useReducer(threadReducer, initialState);
   const loadedThreads = useRef<Record<string, boolean>>({});
@@ -1384,6 +1388,8 @@ export function useThreads({
           text: messageText,
           model,
           effort,
+          accessMode,
+          speedMode,
         },
       });
       try {
@@ -1391,7 +1397,7 @@ export function useThreads({
           activeWorkspace.id,
           threadId,
           messageText,
-          { model, effort, accessMode },
+          { model, effort, accessMode, speedMode },
         );
         onDebug?.({
           id: `${Date.now()}-server-turn-start`,
@@ -1425,6 +1431,7 @@ export function useThreads({
       activeThreadId,
       effort,
       accessMode,
+      speedMode,
       model,
       onDebug,
       onError,

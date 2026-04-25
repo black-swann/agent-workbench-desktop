@@ -1,6 +1,7 @@
 export type WorkspaceSettings = {
   sidebarCollapsed: boolean;
   defaultAccessMode: AccessMode;
+  defaultSpeedMode: SpeedMode;
   defaultModel: string | null;
   defaultEffort: string | null;
 };
@@ -50,7 +51,9 @@ export type ThreadSummary = {
 export type ReviewTarget =
   | { type: "custom"; instructions: string };
 
-export type AccessMode = "read-only" | "current" | "full-access";
+export type AccessMode = "read-only" | "current" | "full-access" | "yolo";
+
+export type SpeedMode = "standard" | "fast";
 
 export type ApprovalRequest = {
   workspace_id: string;

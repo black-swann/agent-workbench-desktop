@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import type { WorkspaceInfo, WorkspaceSettings } from "../types";
+import type { AccessMode, SpeedMode, WorkspaceInfo, WorkspaceSettings } from "../types";
 import type { ReviewTarget } from "../types";
 
 export async function pickWorkspacePath(): Promise<string | null> {
@@ -63,7 +63,8 @@ export async function sendUserMessage(
   options?: {
     model?: string | null;
     effort?: string | null;
-    accessMode?: "read-only" | "current" | "full-access";
+    accessMode?: AccessMode;
+    speedMode?: SpeedMode;
   },
 ) {
   return invoke("send_user_message", {
@@ -73,6 +74,7 @@ export async function sendUserMessage(
     model: options?.model ?? null,
     effort: options?.effort ?? null,
     accessMode: options?.accessMode ?? null,
+    speedMode: options?.speedMode ?? null,
   });
 }
 

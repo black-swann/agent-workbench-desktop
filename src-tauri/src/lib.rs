@@ -39,6 +39,8 @@ struct WorkspaceSettings {
     sidebar_collapsed: bool,
     #[serde(default = "default_access_mode", rename = "defaultAccessMode")]
     default_access_mode: String,
+    #[serde(default = "default_speed_mode", rename = "defaultSpeedMode")]
+    default_speed_mode: String,
     #[serde(default, rename = "defaultModel")]
     default_model: Option<String>,
     #[serde(default, rename = "defaultEffort")]
@@ -47,6 +49,10 @@ struct WorkspaceSettings {
 
 fn default_access_mode() -> String {
     "current".to_string()
+}
+
+fn default_speed_mode() -> String {
+    "standard".to_string()
 }
 
 #[derive(Serialize, Clone)]
@@ -227,10 +233,11 @@ fn build_turn_start_params(
     model: Option<String>,
     effort: Option<String>,
     access_mode: Option<String>,
+    speed_mode: Option<String>,
 ) -> Value {
     let access_mode = access_mode.unwrap_or_else(|| "current".to_string());
     let sandbox_policy = match access_mode.as_str() {
-        "full-access" => json!({
+        "full-access" | "yolo" => json!({
             "type": "dangerFullAccess"
         }),
         "read-only" => json!({
@@ -243,9 +250,13 @@ fn build_turn_start_params(
         }),
     };
 
-    let approval_policy = "on-request";
+    let approval_policy = if access_mode == "yolo" {
+        "never"
+    } else {
+        "on-request"
+    };
 
-    json!({
+    let mut params = json!({
         "threadId": thread_id,
         "input": [{ "type": "text", "text": text }],
         "cwd": cwd,
@@ -253,7 +264,15 @@ fn build_turn_start_params(
         "sandboxPolicy": sandbox_policy,
         "model": model,
         "effort": effort,
-    })
+    });
+
+    if speed_mode.as_deref() == Some("fast") {
+        if let Some(params) = params.as_object_mut() {
+            params.insert("serviceTier".to_string(), json!("fast"));
+        }
+    }
+
+    params
 }
 
 fn write_workspaces(path: &PathBuf, entries: &[WorkspaceEntry]) -> Result<(), String> {
@@ -659,6 +678,7 @@ async fn send_user_message(
     model: Option<String>,
     effort: Option<String>,
     access_mode: Option<String>,
+    speed_mode: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<Value, String> {
     let sessions = state.sessions.lock().await;
@@ -672,6 +692,7 @@ async fn send_user_message(
         model,
         effort,
         access_mode,
+        speed_mode,
     );
     session.send_request("turn/start", params).await
 }
@@ -898,9 +919,39 @@ mod tests {
             Some("gpt-5.2-codex".to_string()),
             Some("high".to_string()),
             Some("full-access".to_string()),
+            None,
         );
         assert_eq!(params["approvalPolicy"], json!("on-request"));
         assert_eq!(params["sandboxPolicy"]["type"], json!("dangerFullAccess"));
+    }
+
+    #[test]
+    fn build_turn_start_params_uses_no_approval_for_yolo() {
+        let params = build_turn_start_params(
+            "thread-1",
+            "hello",
+            "/workspace",
+            None,
+            None,
+            Some("yolo".to_string()),
+            None,
+        );
+        assert_eq!(params["approvalPolicy"], json!("never"));
+        assert_eq!(params["sandboxPolicy"]["type"], json!("dangerFullAccess"));
+    }
+
+    #[test]
+    fn build_turn_start_params_sends_fast_service_tier() {
+        let params = build_turn_start_params(
+            "thread-1",
+            "hello",
+            "/workspace",
+            None,
+            None,
+            Some("current".to_string()),
+            Some("fast".to_string()),
+        );
+        assert_eq!(params["serviceTier"], json!("fast"));
     }
 
     #[test]
@@ -912,6 +963,7 @@ mod tests {
             None,
             None,
             Some("current".to_string()),
+            None,
         );
         assert_eq!(params["approvalPolicy"], json!("on-request"));
         assert_eq!(params["sandboxPolicy"]["type"], json!("workspaceWrite"));

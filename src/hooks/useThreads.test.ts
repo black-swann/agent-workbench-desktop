@@ -42,6 +42,7 @@ const workspace: WorkspaceInfo = {
   settings: {
     sidebarCollapsed: false,
     defaultAccessMode: "current",
+    defaultSpeedMode: "standard",
     defaultModel: null,
     defaultEffort: null,
   },

@@ -277,24 +277,46 @@
 
 .workspace-settings-input,
 .workspace-settings-select {
+  appearance: none;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
   min-height: 36px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.05);
   color: #fff;
   padding: 8px 12px;
+  color-scheme: dark;
+}
+
+.workspace-settings-select {
+  padding-right: 34px;
+  background-image: linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.62) 50%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.62) 50%, transparent 50%);
+  background-position: calc(100% - 18px) calc(50% + 1px),
+    calc(100% - 12px) calc(50% + 1px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+.workspace-settings-select option {
+  background: #141820;
+  color: #fff;
 }
 
 .workspace-settings-input-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
-  align-items: stretch;
-  flex-wrap: wrap;
 }
 
 .workspace-settings-input-row .workspace-settings-input {
-  flex: 1;
-  min-width: 220px;
+  grid-column: 1 / -1;
+}
+
+.workspace-settings-input-row .header-button {
+  justify-self: start;
 }
 
 .workspace-settings-actions {

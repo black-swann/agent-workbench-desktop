@@ -29,8 +29,18 @@ describe("normalizeThreadOverride", () => {
   it("returns null when a thread override matches defaults", () => {
     expect(
       normalizeThreadOverride(
-        { model: "gpt-5.2-codex", effort: null, accessMode: "current" },
-        { model: "gpt-5.2-codex", effort: null, accessMode: "current" },
+        {
+          model: "gpt-5.2-codex",
+          effort: null,
+          accessMode: "current",
+          speedMode: "standard",
+        },
+        {
+          model: "gpt-5.2-codex",
+          effort: null,
+          accessMode: "current",
+          speedMode: "standard",
+        },
       ),
     ).toBeNull();
   });
@@ -38,13 +48,24 @@ describe("normalizeThreadOverride", () => {
   it("keeps an override when any selection differs from defaults", () => {
     expect(
       normalizeThreadOverride(
-        { model: "gpt-5.2-codex", effort: null, accessMode: "current" },
-        { model: "gpt-5.2-codex", effort: "high", accessMode: "current" },
+        {
+          model: "gpt-5.2-codex",
+          effort: null,
+          accessMode: "current",
+          speedMode: "standard",
+        },
+        {
+          model: "gpt-5.2-codex",
+          effort: "high",
+          accessMode: "current",
+          speedMode: "standard",
+        },
       ),
     ).toEqual({
       model: "gpt-5.2-codex",
       effort: "high",
       accessMode: "current",
+      speedMode: "standard",
     });
   });
 });

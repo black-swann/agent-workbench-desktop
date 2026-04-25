@@ -197,6 +197,20 @@
   line-height: 1.35;
 }
 
+.composer-speed-note {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  max-width: min(100%, 520px);
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(112, 208, 255, 0.28);
+  background: rgba(112, 208, 255, 0.08);
+  color: rgba(196, 235, 255, 0.94);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
 .composer-status-pill {
   display: inline-flex;
   align-items: center;
@@ -332,6 +346,11 @@
 .composer-select--approval {
   width: 126px;
   max-width: 150px;
+}
+
+.composer-select--speed {
+  width: 88px;
+  max-width: 110px;
 }
 
 .composer-select--skill {

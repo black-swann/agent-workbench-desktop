@@ -111,7 +111,7 @@ src-tauri/
 - Selecting a thread always calls `thread/resume` to refresh messages from disk.
 - CLI sessions appear if their `cwd` matches the workspace path; they are not live-streamed unless resumed.
 - Each workspace launches its own `codex app-server` process with that workspace as the child process working directory.
-- Each workspace can store its own default access mode, default model, default reasoning effort, and optional custom Codex binary path.
+- Each workspace can store its own default access mode, speed mode, default model, default reasoning effort, and optional custom Codex binary path.
 - Last active workspace and thread restore on relaunch, and per-thread overrides/checkpoints persist in local storage.
 - The app uses `codex app-server` over stdio; see `src-tauri/src/lib.rs`.
 - Release builds currently produce a `.deb` package only.

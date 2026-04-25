@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LogicalPosition } from "@tauri-apps/api/dpi";
 import { Menu, MenuItem } from "@tauri-apps/api/menu";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import type { QueuedMessage, ThreadTokenUsage } from "../types";
+import type { AccessMode, QueuedMessage, SpeedMode, ThreadTokenUsage } from "../types";
 
 type ComposerProps = {
   onSend: (text: string) => void;
@@ -15,8 +15,10 @@ type ComposerProps = {
   reasoningOptions: string[];
   selectedEffort: string | null;
   onSelectEffort: (effort: string | null) => void;
-  accessMode: "read-only" | "current" | "full-access";
-  onSelectAccessMode: (mode: "read-only" | "current" | "full-access") => void;
+  accessMode: AccessMode;
+  onSelectAccessMode: (mode: AccessMode) => void;
+  speedMode: SpeedMode;
+  onSelectSpeedMode: (mode: SpeedMode) => void;
   skills: { name: string; description?: string }[];
   contextUsage?: ThreadTokenUsage | null;
   queuedMessages?: QueuedMessage[];
@@ -31,6 +33,7 @@ type ComposerProps = {
     model: { isOverride: boolean; currentLabel: string; defaultLabel: string };
     effort: { isOverride: boolean; currentLabel: string; defaultLabel: string };
     access: { isOverride: boolean; currentLabel: string; defaultLabel: string };
+    speed: { isOverride: boolean; currentLabel: string; defaultLabel: string };
   } | null;
 };
 
@@ -47,6 +50,8 @@ export function Composer({
   onSelectEffort,
   accessMode,
   onSelectAccessMode,
+  speedMode,
+  onSelectSpeedMode,
   skills,
   contextUsage = null,
   queuedMessages = [],
@@ -330,14 +335,39 @@ export function Composer({
               disabled={disabled}
               value={accessMode}
               onChange={(event) =>
-                onSelectAccessMode(
-                  event.target.value as "read-only" | "current" | "full-access",
-                )
+                onSelectAccessMode(event.target.value as AccessMode)
               }
             >
               <option value="read-only">Read only</option>
               <option value="current">Current</option>
               <option value="full-access">Full access, ask</option>
+              <option value="yolo">YOLO</option>
+            </select>
+          </div>
+          <div className="composer-select-wrap">
+            <span className="composer-icon" aria-hidden>
+              <svg viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M13 3L5 14h6l-1 7 8-11h-6l1-7z"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
+            <select
+              className="composer-select composer-select--speed"
+              aria-label="Speed mode"
+              title={selectionStatus?.speed.currentLabel ?? "Speed mode"}
+              disabled={disabled}
+              value={speedMode}
+              onChange={(event) =>
+                onSelectSpeedMode(event.target.value as SpeedMode)
+              }
+            >
+              <option value="standard">Standard</option>
+              <option value="fast">Fast</option>
             </select>
           </div>
           <div className="composer-select-wrap">
@@ -380,6 +410,17 @@ export function Composer({
             stay enabled before privileged actions run.
           </div>
         )}
+        {accessMode === "yolo" && (
+          <div className="composer-security-warning" role="status">
+            YOLO can read and write outside this workspace and disables approval
+            prompts for agent actions.
+          </div>
+        )}
+        {speedMode === "fast" && (
+          <div className="composer-speed-note" role="status">
+            Fast mode speeds supported Codex models at higher credit usage.
+          </div>
+        )}
         {selectionStatus && (
           <div className="composer-status" aria-live="polite">
             <span
@@ -406,9 +447,18 @@ export function Composer({
             >
               Access {selectionStatus.access.isOverride ? "override" : "default"}
             </span>
+            <span
+              className={`composer-status-pill ${
+                selectionStatus.speed.isOverride ? "is-override" : ""
+              }`}
+              title={`Current: ${selectionStatus.speed.currentLabel}. Workspace default: ${selectionStatus.speed.defaultLabel}.`}
+            >
+              Speed {selectionStatus.speed.isOverride ? "override" : "default"}
+            </span>
             {(selectionStatus.model.isOverride ||
               selectionStatus.effort.isOverride ||
-              selectionStatus.access.isOverride) &&
+              selectionStatus.access.isOverride ||
+              selectionStatus.speed.isOverride) &&
               onResetToDefaults && (
                 <button
                   className="composer-reset"

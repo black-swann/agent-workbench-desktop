@@ -1,4 +1,4 @@
-import type { AccessMode, ThreadSummary } from "../types";
+import type { AccessMode, SpeedMode, ThreadSummary } from "../types";
 
 export type ThreadPresentationState = {
   customName?: string | null;
@@ -9,6 +9,7 @@ export type ThreadOverrideSettings = {
   model: string | null;
   effort: string | null;
   accessMode: AccessMode;
+  speedMode: SpeedMode;
 };
 
 export function applyThreadPresentation(
@@ -40,7 +41,8 @@ export function normalizeThreadOverride(
 ): ThreadOverrideSettings | null {
   return next.model === defaults.model &&
     next.effort === defaults.effort &&
-    next.accessMode === defaults.accessMode
+    next.accessMode === defaults.accessMode &&
+    next.speedMode === defaults.speedMode
     ? null
     : next;
 }

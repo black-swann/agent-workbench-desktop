@@ -24,7 +24,7 @@ import { useSkills } from "./hooks/useSkills";
 import { useDebugLog } from "./hooks/useDebugLog";
 import { useWorkspaceRefreshOnFocus } from "./hooks/useWorkspaceRefreshOnFocus";
 import { useWorkspaceRestore } from "./hooks/useWorkspaceRestore";
-import type { AccessMode, QueuedMessage } from "./types";
+import type { AccessMode, QueuedMessage, SpeedMode } from "./types";
 import {
   applyThreadPresentation,
   normalizeThreadOverride,
@@ -110,6 +110,7 @@ const DebugPanel = lazy(async () => {
 
 function App() {
   const [accessMode, setAccessMode] = useState<AccessMode>("current");
+  const [speedMode, setSpeedMode] = useState<SpeedMode>("standard");
   const [queuedByThread, setQueuedByThread] = useState<
     Record<string, QueuedMessage[]>
   >({});
@@ -239,6 +240,7 @@ function App() {
     model: resolvedModel,
     effort: selectedEffort,
     accessMode,
+    speedMode,
   });
 
   const activeRateLimits = activeWorkspaceId
@@ -283,6 +285,7 @@ function App() {
   const defaultEffortLabel = workspaceDefaultEffort ?? "Model default";
   const currentEffortLabel = selectedEffort ?? "Model default";
   const defaultAccessLabel = activeWorkspace?.settings.defaultAccessMode ?? "current";
+  const defaultSpeedLabel = activeWorkspace?.settings.defaultSpeedMode ?? "standard";
   const activeThreadOverride = activeThreadId
     ? threadOverridesById[activeThreadId] ?? null
     : null;
@@ -304,6 +307,12 @@ function App() {
           isOverride: accessMode !== activeWorkspace.settings.defaultAccessMode,
           currentLabel: accessMode,
           defaultLabel: defaultAccessLabel,
+        },
+        speed: {
+          isOverride:
+            speedMode !== (activeWorkspace.settings.defaultSpeedMode ?? "standard"),
+          currentLabel: speedMode,
+          defaultLabel: defaultSpeedLabel,
         },
       }
     : null;
@@ -435,6 +444,19 @@ function App() {
   }, [accessMode, activeThreadOverride?.accessMode, activeWorkspace]);
 
   useEffect(() => {
+    if (!activeWorkspace) {
+      return;
+    }
+    const targetSpeed =
+      activeThreadOverride?.speedMode ??
+      activeWorkspace.settings.defaultSpeedMode ??
+      "standard";
+    if (speedMode !== targetSpeed) {
+      setSpeedMode(targetSpeed);
+    }
+  }, [speedMode, activeThreadOverride?.speedMode, activeWorkspace]);
+
+  useEffect(() => {
     if (!activeWorkspace || models.length === 0) {
       return;
     }
@@ -519,6 +541,11 @@ function App() {
         existing?.accessMode ??
         activeWorkspace?.settings.defaultAccessMode ??
         "current",
+      speedMode:
+        pending.speedMode ??
+        existing?.speedMode ??
+        activeWorkspace?.settings.defaultSpeedMode ??
+        "standard",
     });
     setPendingThreadOverridesByWorkspace((prev) => {
       const next = { ...prev };
@@ -528,6 +555,7 @@ function App() {
   }, [
     activeThreadId,
     activeWorkspace?.settings.defaultAccessMode,
+    activeWorkspace?.settings.defaultSpeedMode,
     activeWorkspaceId,
     pendingThreadOverridesByWorkspace,
     threadOverridesById,
@@ -597,6 +625,7 @@ function App() {
         model: workspaceDefaultModel?.model ?? null,
         effort: workspaceDefaultEffort ?? null,
         accessMode: activeWorkspace?.settings.defaultAccessMode ?? "current",
+        speedMode: activeWorkspace?.settings.defaultSpeedMode ?? "standard",
       },
       nextEffective,
     );
@@ -800,6 +829,10 @@ function App() {
           activeThreadOverride?.accessMode ??
           activeWorkspace?.settings.defaultAccessMode ??
           "current",
+        speedMode:
+          activeThreadOverride?.speedMode ??
+          activeWorkspace?.settings.defaultSpeedMode ??
+          "standard",
       });
       return;
     }
@@ -818,6 +851,10 @@ function App() {
           activeThreadOverride?.accessMode ??
           activeWorkspace?.settings.defaultAccessMode ??
           "current",
+        speedMode:
+          activeThreadOverride?.speedMode ??
+          activeWorkspace?.settings.defaultSpeedMode ??
+          "standard",
       });
       return;
     }
@@ -827,7 +864,13 @@ function App() {
   }
 
   function handleSelectAccessMode(mode: AccessMode) {
-    if (mode === "full-access" && accessMode !== "full-access") {
+    if (mode === "yolo" && accessMode !== "yolo") {
+      pushAlert(
+        "warning",
+        "YOLO mode selected",
+        "Agents can read and write anywhere Codex can access, and approval prompts are disabled for this turn.",
+      );
+    } else if (mode === "full-access" && accessMode !== "full-access") {
       pushAlert(
         "warning",
         "Full access selected",
@@ -840,11 +883,41 @@ function App() {
         model: activeThreadOverride?.model ?? workspaceDefaultModel?.model ?? null,
         effort: activeThreadOverride?.effort ?? workspaceDefaultEffort ?? null,
         accessMode: mode,
+        speedMode:
+          activeThreadOverride?.speedMode ??
+          activeWorkspace?.settings.defaultSpeedMode ??
+          "standard",
       });
       return;
     }
     if (activeWorkspaceId) {
       queuePendingThreadOverride(activeWorkspaceId, { accessMode: mode });
+    }
+  }
+
+  function handleSelectSpeedMode(mode: SpeedMode) {
+    if (mode === "fast" && speedMode !== "fast") {
+      pushAlert(
+        "info",
+        "Fast mode selected",
+        "Supported Codex models run faster with higher credit usage. Access permissions are unchanged.",
+      );
+    }
+    setSpeedMode(mode);
+    if (activeThreadId) {
+      updateThreadOverride(activeThreadId, {
+        model: activeThreadOverride?.model ?? workspaceDefaultModel?.model ?? null,
+        effort: activeThreadOverride?.effort ?? workspaceDefaultEffort ?? null,
+        accessMode:
+          activeThreadOverride?.accessMode ??
+          activeWorkspace?.settings.defaultAccessMode ??
+          "current",
+        speedMode: mode,
+      });
+      return;
+    }
+    if (activeWorkspaceId) {
+      queuePendingThreadOverride(activeWorkspaceId, { speedMode: mode });
     }
   }
 
@@ -1061,9 +1134,11 @@ function App() {
                   selectedModelId={selectedModelId}
                   selectedEffort={selectedEffort}
                   accessMode={accessMode}
+                  speedMode={speedMode}
                   onSelectModel={handleSelectModel}
                   onSelectEffort={handleSelectEffort}
                   onSelectAccessMode={handleSelectAccessMode}
+                  onSelectSpeedMode={handleSelectSpeedMode}
                   onUpdateWorkspaceSettings={updateWorkspaceSettings}
                   onUpdateWorkspaceCodexBin={updateWorkspaceCodexBin}
                   onReconnectWorkspace={handleConnectWorkspace}
@@ -1251,6 +1326,8 @@ function App() {
               onSelectEffort={handleSelectEffort}
               accessMode={accessMode}
               onSelectAccessMode={handleSelectAccessMode}
+              speedMode={speedMode}
+              onSelectSpeedMode={handleSelectSpeedMode}
               skills={skills}
               selectionStatus={currentSelectionStatus}
               onComposerRef={(element) => {
@@ -1265,6 +1342,7 @@ function App() {
                 }
                 setSelectedEffort(workspaceDefaultEffort ?? null);
                 setAccessMode(activeWorkspace.settings.defaultAccessMode ?? "current");
+                setSpeedMode(activeWorkspace.settings.defaultSpeedMode ?? "standard");
                 if (activeThreadId) {
                   setThreadOverridesById((prev) => {
                     const next = { ...prev };
