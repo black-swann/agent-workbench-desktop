@@ -3,7 +3,7 @@ use serde_json::{json, Map, Value};
 use std::collections::HashMap;
 use std::fs::OpenOptions;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager, State};
@@ -173,34 +173,52 @@ fn validate_codex_bin_path(codex_bin: &str) -> Result<String, String> {
     Ok(trimmed.to_string())
 }
 
+fn user_local_bin() -> Option<PathBuf> {
+    std::env::var_os("HOME")
+        .filter(|home| !home.is_empty())
+        .map(PathBuf::from)
+        .map(|home| home.join(".local/bin"))
+}
+
 fn default_codex_bin() -> String {
-    let candidates = [
-        "/usr/local/bin/codex",
-        "/home/example/.local/bin/codex",
-        "/usr/bin/codex",
-        "/bin/codex",
+    let mut candidates = vec![
+        PathBuf::from("/usr/local/bin/codex"),
+        PathBuf::from("/usr/bin/codex"),
+        PathBuf::from("/bin/codex"),
     ];
+    if let Some(local_bin) = user_local_bin() {
+        candidates.insert(1, local_bin.join("codex"));
+    }
     candidates
         .iter()
-        .find(|candidate| {
-            let path = PathBuf::from(candidate);
-            path.is_file() && validate_codex_bin_permissions(&path, candidate).is_ok()
-        })
-        .map(|candidate| (*candidate).to_string())
+        .find(|candidate| path_is_valid_codex_bin(candidate))
+        .map(|candidate| candidate.to_string_lossy().into_owned())
         .unwrap_or_else(|| "codex".to_string())
+}
+
+fn path_is_valid_codex_bin(path: &Path) -> bool {
+    path.is_file() && validate_codex_bin_permissions(path, &path.to_string_lossy()).is_ok()
 }
 
 fn desktop_child_path() -> String {
     let existing = std::env::var("PATH").unwrap_or_default();
-    let common = "/usr/local/bin:/usr/bin:/bin:/home/example/.local/bin";
+    let mut common = vec![
+        "/usr/local/bin".to_string(),
+        "/usr/bin".to_string(),
+        "/bin".to_string(),
+    ];
+    if let Some(local_bin) = user_local_bin() {
+        common.push(local_bin.to_string_lossy().into_owned());
+    }
+    let common = common.join(":");
     if existing.is_empty() {
-        return common.to_string();
+        return common;
     }
     format!("{common}:{existing}")
 }
 
 #[cfg(unix)]
-fn validate_codex_bin_permissions(path: &PathBuf, display: &str) -> Result<(), String> {
+fn validate_codex_bin_permissions(path: &Path, display: &str) -> Result<(), String> {
     use std::os::unix::fs::PermissionsExt;
 
     let mode = path
@@ -222,7 +240,7 @@ fn validate_codex_bin_permissions(path: &PathBuf, display: &str) -> Result<(), S
 }
 
 #[cfg(not(unix))]
-fn validate_codex_bin_permissions(_path: &PathBuf, _display: &str) -> Result<(), String> {
+fn validate_codex_bin_permissions(_path: &Path, _display: &str) -> Result<(), String> {
     Ok(())
 }
 
@@ -671,6 +689,7 @@ async fn archive_thread(
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 async fn send_user_message(
     workspace_id: String,
     thread_id: String,
@@ -812,7 +831,7 @@ async fn connect_workspace(
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
-            let state = AppState::load(&app.handle());
+            let state = AppState::load(app.handle());
             app.manage(state);
             Ok(())
         })
