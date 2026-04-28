@@ -3,6 +3,15 @@
   "private": true,
   "license": "MIT",
   "version": "0.1.0",
+  "description": "Linux desktop app for managing local Codex workspaces and long-running agent sessions.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/betnbd/agent-workbench-desktop.git"
+  },
+  "bugs": {
+    "url": "https://github.com/betnbd/agent-workbench-desktop/issues"
+  },
+  "homepage": "https://github.com/betnbd/agent-workbench-desktop#readme",
   "type": "module",
   "scripts": {
     "dev": "vite",

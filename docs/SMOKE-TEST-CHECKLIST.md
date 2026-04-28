@@ -1,6 +1,6 @@
-# Prototype Smoke Test Checklist
+# Smoke Test Checklist
 
-Use this checklist before calling the prototype ready for a review build.
+Use this checklist before publishing a release build or sharing a new package.
 
 ## Preconditions
 
@@ -49,7 +49,11 @@ Use this checklist before calling the prototype ready for a review build.
 
 - [ ] Run `npm run build`.
 - [ ] Run `cargo test --lib` in `src-tauri/`.
+- [ ] Run `cargo clippy --lib -- -D warnings` in `src-tauri/`.
+- [ ] Run `npm audit --audit-level=moderate`.
+- [ ] Run `cargo audit --quiet` and review transitive warnings.
 - [ ] Run `npm run build:deb`.
+- [ ] Run `npm run release:checksums`.
 - [ ] Install the generated `.deb` on a clean Ubuntu environment and confirm the app launches.
 
 ## Local Verification Notes
@@ -57,9 +61,13 @@ Use this checklist before calling the prototype ready for a review build.
 Last local verification from this repo snapshot:
 
 - `npm run build`: passed
-- `cargo check`: passed
 - `cargo test --lib`: passed
+- `cargo clippy --lib -- -D warnings`: passed
+- `npm audit --audit-level=moderate`: passed with 0 vulnerabilities
+- `cargo audit --quiet`: completed with documented transitive warnings
+- `npm run smoke:app-server`: passed
 - `npm run build:deb`: passed
+- `npm run release:checksums`: passed
 
 Still recommended before release review:
 

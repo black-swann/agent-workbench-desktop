@@ -32,6 +32,7 @@ import {
   type ThreadOverrideSettings,
   type ThreadPresentationState,
 } from "./utils/threadState";
+import { isTauriRuntime } from "./utils/tauriRuntime";
 
 type UiAlert = {
   id: string;
@@ -406,6 +407,10 @@ function App() {
   }, [rightPanelCollapsed]);
 
   useEffect(() => {
+    if (!isTauriRuntime()) {
+      document.documentElement.style.setProperty("--fallback-ui-scale", String(effectiveUiScale));
+      return;
+    }
     getCurrentWebview().setZoom(effectiveUiScale).catch(() => {
       document.documentElement.style.setProperty("--fallback-ui-scale", String(effectiveUiScale));
     });

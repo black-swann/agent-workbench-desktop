@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
 import type { AppServerEvent, ApprovalRequest } from "../types";
+import { isTauriRuntime } from "../utils/tauriRuntime";
 
 type AgentDelta = {
   workspaceId: string;
@@ -45,6 +46,9 @@ type AppServerEventHandlers = {
 
 export function useAppServerEvents(handlers: AppServerEventHandlers) {
   useEffect(() => {
+    if (!isTauriRuntime()) {
+      return;
+    }
     let unlisten: (() => void) | null = null;
     let canceled = false;
     listen<AppServerEvent>("app-server-event", (event) => {

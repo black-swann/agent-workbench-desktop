@@ -5,6 +5,8 @@ Agent Workbench is a Tauri app for managing local workspaces and long-running en
 This build currently targets Wayland-first Linux desktops, with X11 as a compatibility fallback through the normal GTK/WebKit stack.
 Distribution is Debian-package only for now.
 
+![Agent Workbench home screen](docs/assets/agent-workbench-screenshot.png)
+
 ## Features
 
 - Add and persist workspaces using the system folder picker.
@@ -20,14 +22,19 @@ Distribution is Debian-package only for now.
 
 ## Status
 
-Local validation is complete in the repository environment:
+Current public-release validation in this repository:
 
 - `npm test`
 - `npm run build`
 - `cargo test --lib`
+- `cargo clippy --lib -- -D warnings`
+- `npm audit --audit-level=moderate`
+- `cargo audit --quiet`
 - `npm run smoke:app-server`
+- `npm run build:deb`
+- `npm run release:checksums`
 
-The one remaining release-readiness item is a full clean-Ubuntu acceptance pass of the generated `.deb`.
+`cargo audit --quiet` currently reports warning advisories in transitive Tauri/GTK dependencies. They are tracked in [docs/SECURITY-REVIEW.md](docs/SECURITY-REVIEW.md) and are not direct application code.
 
 ## Requirements
 
@@ -65,6 +72,14 @@ Run in dev mode:
 npm run tauri dev
 ```
 
+Preview the static UI shell in a browser:
+
+```bash
+npm run dev
+```
+
+The browser preview cannot connect workspaces or run sessions; those actions require the Tauri desktop runtime. It is useful for checking layout and capturing screenshots.
+
 Build the Ubuntu/Debian package:
 
 ```bash
@@ -88,6 +103,7 @@ Run backend validation tests:
 ```bash
 cd src-tauri
 cargo test --lib
+cargo clippy --lib -- -D warnings
 ```
 
 ## Project Structure
@@ -121,6 +137,17 @@ src-tauri/
 
 - Security review: [docs/SECURITY-REVIEW.md](docs/SECURITY-REVIEW.md)
 - Smoke-test checklist: [docs/SMOKE-TEST-CHECKLIST.md](docs/SMOKE-TEST-CHECKLIST.md)
+
+## Security Model
+
+- Agent Workbench is a local desktop shell around a configured `codex app-server` process.
+- Workspace paths and custom binary paths are stored locally in the app data directory.
+- Custom binaries must be absolute executable files and should only point to trusted local tools.
+- Debug and health diagnostics are redacted on a best-effort basis before display or copy.
+- Approval prompts remain enabled even when a workspace uses full-access mode.
+- Release artifacts are checksummed with SHA-256, but not signed yet.
+
+Please report security-sensitive issues privately if possible. See [SECURITY.md](SECURITY.md).
 
 ## Troubleshooting
 

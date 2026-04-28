@@ -1,6 +1,6 @@
 # Security Review
 
-Date: 2026-04-24
+Date: 2026-04-28
 
 ## Scope
 
@@ -13,6 +13,7 @@ Reviewed the local desktop security surface for account-backed session use:
 - changed-file opening
 - package install and runtime launch behavior
 - npm dependency advisory state
+- browser-only static preview behavior
 
 ## Fixes Applied
 
@@ -28,18 +29,20 @@ Reviewed the local desktop security surface for account-backed session use:
 - Replaced broad `core:default` with the specific core event, menu, and resource permissions used by the frontend.
 - Added a release checksum script that writes `SHA256SUMS` beside the generated `.deb`.
 - Kept packaged devtools disabled and retained a restrictive CSP.
+- Added browser-runtime guards so the Vite preview can render the non-connected home screen without invoking desktop-only Tauri APIs.
 
 ## Validation
 
-- `npm audit` reported 0 vulnerabilities.
+- `npm audit --audit-level=moderate` reported 0 vulnerabilities.
+- `cargo audit --quiet` completed with 19 warning advisories from transitive Tauri/GTK dependencies, mostly unmaintained GTK3 bindings plus `glib` and `rand` unsoundness warnings.
 - `npm test` passed with 4 test files and 9 tests.
 - `npm run build` passed.
-- `cargo test --lib` passed with 5 tests.
-- `cargo audit` completed without vulnerability failures; it reported 19 warning advisories from transitive Tauri/GTK dependencies, mostly unmaintained GTK3 bindings plus `glib` and `rand` unsoundness warnings.
+- `cargo test --lib` passed with 9 tests.
+- `cargo clippy --lib -- -D warnings` passed.
 - `npm run smoke:app-server` passed.
 - `npm run build:deb` passed.
 - `npm run release:checksums` passed, and `sha256sum -c SHA256SUMS` verified the generated `.deb`.
-- Reinstalled the rebuilt `.deb` and confirmed the installed app starts without an immediate crash.
+- The README screenshot is captured from the browser-rendered home screen, which intentionally does not connect workspaces outside the Tauri runtime.
 
 ## Residual Risks
 
